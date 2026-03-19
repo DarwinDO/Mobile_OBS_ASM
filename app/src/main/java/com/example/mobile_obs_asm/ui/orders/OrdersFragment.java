@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,6 +32,7 @@ public class OrdersFragment extends Fragment {
     private RecyclerView recyclerView;
     private SectionStateController stateController;
     private OrderRemoteRepository orderRemoteRepository;
+    private boolean sellerSession;
 
     @Nullable
     @Override
@@ -43,8 +45,10 @@ public class OrdersFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         orderRemoteRepository = new OrderRemoteRepository(requireContext());
+        sellerSession = SessionManager.getInstance(requireContext()).isSellerSession();
         recyclerView = view.findViewById(R.id.recyclerOrders);
         stateController = new SectionStateController(view, R.id.layoutOrdersState);
+        bindRoleAwareCopy(view);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setNestedScrollingEnabled(false);
         adapter = new OrderAdapter(
@@ -62,8 +66,8 @@ public class OrdersFragment extends Fragment {
             adapter.replaceOrders(demoOrders);
             recyclerView.setVisibility(demoOrders.isEmpty() ? View.GONE : View.VISIBLE);
             stateController.showMessage(
-                    getString(R.string.state_orders_demo_title),
-                    getString(R.string.state_orders_demo_message),
+                    getString(sellerSession ? R.string.state_seller_orders_demo_title : R.string.state_orders_demo_title),
+                    getString(sellerSession ? R.string.state_seller_orders_demo_message : R.string.state_orders_demo_message),
                     getString(R.string.state_action_sign_in),
                     actionView -> openSignIn()
             );
@@ -73,8 +77,8 @@ public class OrdersFragment extends Fragment {
         adapter.replaceOrders(java.util.Collections.emptyList());
         recyclerView.setVisibility(View.GONE);
         stateController.showLoading(
-                getString(R.string.state_orders_loading_title),
-                getString(R.string.state_orders_loading_message)
+                getString(sellerSession ? R.string.state_seller_orders_loading_title : R.string.state_orders_loading_title),
+                getString(sellerSession ? R.string.state_seller_orders_loading_message : R.string.state_orders_loading_message)
         );
 
         orderRemoteRepository.fetchMyOrders(new RepositoryCallback<List<OrderPreview>>() {
@@ -87,10 +91,10 @@ public class OrdersFragment extends Fragment {
                 if (value.isEmpty()) {
                     recyclerView.setVisibility(View.GONE);
                     stateController.showMessage(
-                            getString(R.string.state_orders_empty_title),
-                            getString(R.string.state_orders_empty_message),
-                            getString(R.string.state_action_browse),
-                            actionView -> navigateToMainSection(R.id.navigation_home)
+                            getString(sellerSession ? R.string.state_seller_orders_empty_title : R.string.state_orders_empty_title),
+                            getString(sellerSession ? R.string.state_seller_orders_empty_message : R.string.state_orders_empty_message),
+                            getString(sellerSession ? R.string.nav_my_listings : R.string.state_action_browse),
+                            actionView -> navigateToMainSection(sellerSession ? R.id.navigation_wishlist : R.id.navigation_home)
                     );
                     return;
                 }
@@ -105,7 +109,7 @@ public class OrdersFragment extends Fragment {
                 }
                 recyclerView.setVisibility(View.GONE);
                 stateController.showMessage(
-                        getString(R.string.state_orders_error_title),
+                        getString(sellerSession ? R.string.state_seller_orders_error_title : R.string.state_orders_error_title),
                         message,
                         getString(R.string.state_action_retry),
                         actionView -> loadOrders()
@@ -126,5 +130,17 @@ public class OrdersFragment extends Fragment {
             return;
         }
         startActivity(MainActivity.createIntent(requireContext(), destinationId));
+    }
+
+    private void bindRoleAwareCopy(View rootView) {
+        if (!sellerSession) {
+            return;
+        }
+
+        ((TextView) rootView.findViewById(R.id.textOrdersHeroBadge)).setText(R.string.seller_orders_hero_badge);
+        ((TextView) rootView.findViewById(R.id.textOrdersHeroTitle)).setText(R.string.seller_orders_hero_title);
+        ((TextView) rootView.findViewById(R.id.textOrdersHeroSubtitle)).setText(R.string.seller_orders_hero_subtitle);
+        ((TextView) rootView.findViewById(R.id.textOrdersSectionTitle)).setText(R.string.seller_orders_section_title);
+        ((TextView) rootView.findViewById(R.id.textOrdersSectionSubtitle)).setText(R.string.seller_orders_section_subtitle);
     }
 }

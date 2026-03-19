@@ -34,6 +34,7 @@ public class ProfileFragment extends Fragment {
 
         SessionManager sessionManager = SessionManager.getInstance(requireContext());
         boolean hasSession = sessionManager.hasActiveSession();
+        boolean sellerSession = sessionManager.isSellerSession();
         UserProfile userProfile = hasSession ? sessionManager.getStoredUserProfile() : null;
         if (userProfile == null) {
             userProfile = hasSession ? FakeMarketplaceRepository.getInstance().getUserProfile() : buildGuestProfile();
@@ -58,27 +59,30 @@ public class ProfileFragment extends Fragment {
         textProfileName.setText(userProfile.getName());
         textProfileRole.setText(userProfile.getRole());
         textProfileEmail.setText(userProfile.getEmail());
-        textProfileSubtitle.setText(hasSession ? R.string.profile_subtitle : R.string.profile_guest_subtitle);
+        textProfileSubtitle.setText(hasSession
+                ? (sellerSession ? R.string.profile_seller_subtitle : R.string.profile_subtitle)
+                : R.string.profile_guest_subtitle);
         textProfileLocation.setText(getString(R.string.profile_info_location_label) + ": " + userProfile.getCity());
         textTrustOrders.setText(getString(R.string.trust_panel_orders) + ": " + userProfile.getCompletedOrders());
         textTrustSaved.setText(getString(R.string.trust_panel_saved) + ": " + userProfile.getSavedListings());
         textTrustRole.setText(getString(R.string.trust_panel_role) + ": " + userProfile.getRole());
 
-        bindActions(hasSession, buttonPrimary, buttonSecondary, buttonTertiary);
+        bindActions(hasSession, sellerSession, buttonPrimary, buttonSecondary, buttonTertiary);
     }
 
     private void bindActions(
             boolean hasSession,
+            boolean sellerSession,
             MaterialButton buttonPrimary,
             MaterialButton buttonSecondary,
             MaterialButton buttonTertiary
     ) {
         if (hasSession) {
-            buttonPrimary.setText(R.string.profile_action_orders);
-            buttonPrimary.setOnClickListener(v -> navigateToSection(R.id.navigation_orders));
+            buttonPrimary.setText(sellerSession ? R.string.profile_action_my_listings : R.string.profile_action_orders);
+            buttonPrimary.setOnClickListener(v -> navigateToSection(sellerSession ? R.id.navigation_wishlist : R.id.navigation_orders));
 
-            buttonSecondary.setText(R.string.profile_action_wishlist);
-            buttonSecondary.setOnClickListener(v -> navigateToSection(R.id.navigation_wishlist));
+            buttonSecondary.setText(sellerSession ? R.string.profile_action_sales_orders : R.string.profile_action_wishlist);
+            buttonSecondary.setOnClickListener(v -> navigateToSection(sellerSession ? R.id.navigation_orders : R.id.navigation_wishlist));
 
             buttonTertiary.setText(R.string.profile_sign_out);
             buttonTertiary.setOnClickListener(v -> {

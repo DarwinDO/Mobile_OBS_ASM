@@ -12,7 +12,9 @@ public class RemoteProductResponse {
     private String description;
     private BigDecimal price;
     private String condition;
+    private String status;
     private String province;
+    private String district;
     private String frameSize;
     private String wheelSize;
     private String groupset;
@@ -20,6 +22,7 @@ public class RemoteProductResponse {
     @SerializedName(value = "verified", alternate = {"isVerified"})
     private boolean verified;
     private List<ImageInfo> images;
+    private SellerInfo seller;
 
     public String getId() {
         return id;
@@ -41,8 +44,16 @@ public class RemoteProductResponse {
         return condition;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
     public String getProvince() {
         return province;
+    }
+
+    public String getDistrict() {
+        return district;
     }
 
     public String getFrameSize() {
@@ -67,6 +78,14 @@ public class RemoteProductResponse {
 
     public List<ImageInfo> getImages() {
         return images;
+    }
+
+    public String getSellerId() {
+        return seller == null ? null : seller.id;
+    }
+
+    public static class SellerInfo {
+        private String id;
     }
 
     public static class ImageInfo {

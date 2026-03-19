@@ -7,7 +7,9 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Body;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
+import retrofit2.http.Path;
 
 public interface OrderApiService {
 
@@ -16,4 +18,19 @@ public interface OrderApiService {
 
     @GET("api/orders/me")
     Call<ApiEnvelope<List<RemoteOrderResponse>>> getMyOrders();
+
+    @PATCH("api/orders/{orderId}/accept")
+    Call<ApiEnvelope<RemoteOrderResponse>> acceptOrder(@Path("orderId") String orderId);
+
+    @PATCH("api/orders/{orderId}/confirm-deposit")
+    Call<ApiEnvelope<RemoteOrderResponse>> confirmDeposit(@Path("orderId") String orderId);
+
+    @PATCH("api/orders/{orderId}/complete")
+    Call<ApiEnvelope<RemoteOrderResponse>> completeOrder(@Path("orderId") String orderId);
+
+    @PATCH("api/orders/{orderId}/confirm-received")
+    Call<ApiEnvelope<RemoteOrderResponse>> confirmReceived(@Path("orderId") String orderId);
+
+    @PATCH("api/orders/{orderId}/cancel")
+    Call<ApiEnvelope<RemoteOrderResponse>> cancelOrder(@Path("orderId") String orderId);
 }

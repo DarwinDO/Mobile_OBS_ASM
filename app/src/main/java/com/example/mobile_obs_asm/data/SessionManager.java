@@ -19,6 +19,7 @@ public class SessionManager {
     private static final String PREFS_NAME = "mobile_obs_secure_prefs";
     private static final String KEY_ACCESS_TOKEN = "access_token";
     private static final String KEY_REFRESH_TOKEN = "refresh_token";
+    private static final String KEY_USER_ID = "user_id";
     private static final String KEY_EMAIL = "email";
     private static final String KEY_FIRST_NAME = "first_name";
     private static final String KEY_LAST_NAME = "last_name";
@@ -67,6 +68,7 @@ public class SessionManager {
         sharedPreferences.edit()
                 .putString(KEY_ACCESS_TOKEN, safe(authResponse.getAccessToken()))
                 .putString(KEY_REFRESH_TOKEN, safe(authResponse.getRefreshToken()))
+                .putString(KEY_USER_ID, safe(authResponse.getUser().getId()))
                 .putString(KEY_EMAIL, safe(authResponse.getUser().getEmail()))
                 .putString(KEY_FIRST_NAME, safe(authResponse.getUser().getFirstName()))
                 .putString(KEY_LAST_NAME, safe(authResponse.getUser().getLastName()))
@@ -87,6 +89,18 @@ public class SessionManager {
         sharedPreferences.edit().clear().commit();
     }
 
+    public String getCurrentUserId() {
+        return sharedPreferences.getString(KEY_USER_ID, "");
+    }
+
+    public boolean isSellerSession() {
+        return "seller".equals(getStoredRoleKey());
+    }
+
+    public boolean isBuyerSession() {
+        return "buyer".equals(getStoredRoleKey());
+    }
+
     public UserProfile getStoredUserProfile() {
         if (!hasActiveSession()) {
             return null;
@@ -99,7 +113,7 @@ public class SessionManager {
             name = "Người dùng";
         }
 
-        String role = sharedPreferences.getString(KEY_ROLE, "buyer");
+        String role = getStoredRoleKey();
         String email = sharedPreferences.getString(KEY_EMAIL, "");
         String address = sharedPreferences.getString(KEY_ADDRESS, "");
         if (address.isEmpty()) {
@@ -111,6 +125,10 @@ public class SessionManager {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private String getStoredRoleKey() {
+        return safe(sharedPreferences.getString(KEY_ROLE, "buyer")).toLowerCase();
     }
 
     private String normalizeRole(String rawRole) {

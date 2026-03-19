@@ -8,9 +8,11 @@ import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
+import com.example.mobile_obs_asm.data.SessionManager;
 import com.example.mobile_obs_asm.ui.home.HomeFragment;
 import com.example.mobile_obs_asm.ui.orders.OrdersFragment;
 import com.example.mobile_obs_asm.ui.profile.ProfileFragment;
+import com.example.mobile_obs_asm.ui.seller.SellerListingsFragment;
 import com.example.mobile_obs_asm.ui.wishlist.WishlistFragment;
 import com.example.mobile_obs_asm.util.SystemBarInsetsHelper;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -22,12 +24,19 @@ public class MainActivity extends AppCompatActivity {
 
     private MaterialToolbar toolbar;
     private BottomNavigationView bottomNavigationView;
+    private boolean sellerSession;
 
     public static Intent createIntent(Context context, @IdRes int startDestination) {
         Intent intent = new Intent(context, MainActivity.class);
         intent.putExtra(EXTRA_START_DESTINATION, startDestination);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return intent;
+    }
+
+    public static int defaultStartDestination(Context context) {
+        return SessionManager.getInstance(context).isSellerSession()
+                ? R.id.navigation_wishlist
+                : R.id.navigation_home;
     }
 
     @Override
@@ -38,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
 
         toolbar = findViewById(R.id.toolbarMain);
         bottomNavigationView = findViewById(R.id.bottomNavigation);
+        sellerSession = SessionManager.getInstance(this).isSellerSession();
+        applyRoleAwareNavigationLabels();
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             showDestination(item.getItemId());
@@ -55,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private void showDestination(@IdRes int destinationId) {
         Fragment fragment;
         if (destinationId == R.id.navigation_wishlist) {
-            fragment = new WishlistFragment();
+            fragment = sellerSession ? new SellerListingsFragment() : new WishlistFragment();
         } else if (destinationId == R.id.navigation_orders) {
             fragment = new OrdersFragment();
         } else if (destinationId == R.id.navigation_profile) {
@@ -74,11 +85,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateToolbar(@IdRes int destinationId) {
         if (destinationId == R.id.navigation_wishlist) {
-            toolbar.setTitle(R.string.toolbar_wishlist);
-            toolbar.setSubtitle(R.string.toolbar_wishlist_subtitle);
+            toolbar.setTitle(sellerSession ? R.string.toolbar_seller_listings : R.string.toolbar_wishlist);
+            toolbar.setSubtitle(sellerSession ? R.string.toolbar_seller_listings_subtitle : R.string.toolbar_wishlist_subtitle);
         } else if (destinationId == R.id.navigation_orders) {
-            toolbar.setTitle(R.string.toolbar_orders);
-            toolbar.setSubtitle(R.string.toolbar_orders_subtitle);
+            toolbar.setTitle(sellerSession ? R.string.toolbar_seller_orders : R.string.toolbar_orders);
+            toolbar.setSubtitle(sellerSession ? R.string.toolbar_seller_orders_subtitle : R.string.toolbar_orders_subtitle);
         } else if (destinationId == R.id.navigation_profile) {
             toolbar.setTitle(R.string.toolbar_profile);
             toolbar.setSubtitle(R.string.toolbar_profile_subtitle);
@@ -86,5 +97,17 @@ public class MainActivity extends AppCompatActivity {
             toolbar.setTitle(R.string.toolbar_home);
             toolbar.setSubtitle(R.string.toolbar_home_subtitle);
         }
+    }
+
+    private void applyRoleAwareNavigationLabels() {
+        if (!sellerSession) {
+            return;
+        }
+
+        bottomNavigationView.getMenu().findItem(R.id.navigation_wishlist)
+                .setTitle(R.string.nav_my_listings)
+                .setIcon(R.drawable.ic_nav_listings);
+        bottomNavigationView.getMenu().findItem(R.id.navigation_orders)
+                .setTitle(R.string.nav_sales_orders);
     }
 }

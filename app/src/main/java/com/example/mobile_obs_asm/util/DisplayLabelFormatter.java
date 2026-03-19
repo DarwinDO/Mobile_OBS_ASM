@@ -52,6 +52,22 @@ public final class DisplayLabelFormatter {
                 return "Tiền mặt";
             case "online":
                 return "Thanh toán online";
+            case "processing":
+                return "Đang xử lý";
+            case "success":
+                return "Thành công";
+            case "failed":
+                return "Thất bại";
+            case "refunded":
+                return "Đã hoàn tiền";
+            case "upfront":
+                return "Đặt cọc";
+            case "remaining":
+                return "Thanh toán còn lại";
+            case "sepay":
+                return "SePay";
+            case "manual":
+                return "Thủ công";
             case "held":
                 return "Đang giữ tiền";
             case "released":

@@ -5,7 +5,9 @@ import android.content.Context;
 import com.example.mobile_obs_asm.BuildConfig;
 import com.example.mobile_obs_asm.network.auth.AuthApiService;
 import com.example.mobile_obs_asm.network.order.OrderApiService;
+import com.example.mobile_obs_asm.network.payment.PaymentApiService;
 import com.example.mobile_obs_asm.network.product.ProductApiService;
+import com.example.mobile_obs_asm.network.reference.ReferenceDataApiService;
 import com.example.mobile_obs_asm.network.wishlist.WishlistApiService;
 
 import okhttp3.OkHttpClient;
@@ -48,5 +50,13 @@ public final class RetrofitClient {
 
     public static OrderApiService createOrderApiService(Context context) {
         return createRetrofit(context).create(OrderApiService.class);
+    }
+
+    public static ReferenceDataApiService createReferenceDataApiService(Context context) {
+        return createRetrofit(context).create(ReferenceDataApiService.class);
+    }
+
+    public static PaymentApiService createPaymentApiService(Context context) {
+        return createRetrofit(context).create(PaymentApiService.class);
     }
 }

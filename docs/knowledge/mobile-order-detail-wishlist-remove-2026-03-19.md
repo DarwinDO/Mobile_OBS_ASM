@@ -1,4 +1,4 @@
-# Order Detail Và Remove Wishlist Trong App Mobile
+# Order Detail, Payment Flow Và Remove Wishlist Trong App Mobile
 
 ## 1. Bối cảnh
 
@@ -8,12 +8,13 @@ Sau khi app đã có:
 - xem danh sách orders
 - xem danh sách wishlist
 
-thì vẫn còn hai khoảng trống dễ thấy:
+thì vẫn còn ba khoảng trống dễ thấy:
 
-1. người dùng chưa bấm vào một order để xem chi tiết
-2. người dùng chưa xóa được sản phẩm khỏi wishlist
+1. người dùng chưa xem sâu được từng order
+2. buyer và seller chưa có nút hành động đúng theo trạng thái đơn
+3. wishlist chưa có luồng xoá đủ rõ
 
-Nếu thiếu hai phần này, app sẽ có cảm giác mới chỉ “xem danh sách”, chưa đủ vòng thao tác thực tế.
+Nếu thiếu ba phần này, app sẽ giống bản xem thử giao diện hơn là một app mua bán có thể thao tác thật.
 
 ## 2. Khái niệm chính
 
@@ -21,144 +22,266 @@ Nếu thiếu hai phần này, app sẽ có cảm giác mới chỉ “xem danh 
 
 `Order Detail` là màn hình cho người dùng xem sâu hơn một order:
 
-- trạng thái
-- funding status
-- payment method
-- thời điểm tạo
+- trạng thái đơn
+- trạng thái tiền
+- phương thức thanh toán
+- tổng tiền, tiền cọc, số tiền còn lại
+- người mua, người bán
 - deadline
-- các bên tham gia
-- ghi chú tóm tắt
+- lịch sử thanh toán
 
-Nó giúp danh sách order không còn là điểm dừng cuối cùng.
+Màn này quan trọng vì danh sách order chỉ trả lời câu hỏi “có đơn nào”, còn màn detail mới trả lời câu hỏi “bây giờ tôi phải làm gì tiếp theo”.
 
-### `Remove Wishlist` là gì?
+### `Payment Request` là gì?
 
-Đây là thao tác xóa một sản phẩm đã lưu khỏi wishlist.
+Đây là bước buyer yêu cầu backend tạo thông tin thanh toán cho một order.
 
-Về mặt backend, thao tác này map sang:
+Trong project này, mobile gọi:
 
-- `DELETE /api/wishlist/{productId}`
+- `POST /api/payments/orders/{orderId}/request`
 
-Về mặt UI, nó phải có action đủ rõ để người dùng hiểu rằng item sẽ bị bỏ khỏi danh sách đã lưu.
+Backend sẽ trả về:
+
+- số tiền cần thanh toán
+- nội dung chuyển khoản
+- tài khoản nhận tiền
+- link checkout hoặc QR nếu có
+
+### `Order Action` là gì?
+
+Đây là các nút hành động phụ thuộc vào vai trò và trạng thái của order.
+
+Ví dụ:
+
+- seller có thể `tiếp nhận đơn`
+- seller có thể `xác nhận đã nhận cọc`
+- seller có thể `xác nhận đã giao xe`
+- buyer có thể `tạo liên kết thanh toán`
+- buyer có thể `xác nhận đã nhận xe`
+- cả hai bên chỉ được `huỷ đơn` ở một số trạng thái nhất định
 
 ## 3. Luồng runtime của Order Detail
 
-1. Người dùng mở tab `Orders`.
-2. `OrdersFragment` nạp danh sách order vào `OrderAdapter`.
-3. Người dùng bấm vào một order card.
-4. `OrderAdapter` gọi callback click.
-5. App mở `OrderDetailActivity`.
-6. `OrderPreview` được truyền qua `Parcelable`.
-7. `OrderDetailActivity` bind dữ liệu lên các card chi tiết.
+### Bước cơ bản
 
-Điểm đáng chú ý là:
+1. Người dùng mở tab `Orders`.
+2. `OrdersFragment` nạp danh sách vào `OrderAdapter`.
+3. Người dùng bấm vào một item.
+4. App mở `OrderDetailActivity`.
+5. `OrderPreview` được truyền qua `Parcelable`.
+6. `OrderDetailActivity` bind dữ liệu order lên hero card, phần thanh toán, phần người tham gia và phần hành động.
+
+Điểm cần nhớ:
 
 - app chưa có endpoint order detail riêng
-- vì vậy detail hiện được dựng từ dữ liệu đã có sẵn trong list response
+- vì vậy detail được dựng từ dữ liệu đã có trong list response
 
-Đây là cách làm rất hợp lý cho MVP vì giảm số request nhưng vẫn cho người dùng xem sâu hơn.
+Đây là cách làm hợp lý cho MVP vì đơn giản hơn mà vẫn đủ thông tin để tiếp tục thao tác.
 
-## 4. Luồng runtime của Remove Wishlist
+## 4. Luồng runtime của Payment Request
 
-## Trường hợp 1: Demo mode
+Luồng này áp dụng khi buyer đang có order ở trạng thái:
 
-1. Người dùng mở tab `Wishlist` bằng demo mode.
-2. Danh sách hiện từ `FakeMarketplaceRepository`.
-3. Người dùng bấm `Remove`.
-4. Adapter xóa item ngay trong danh sách local.
-5. App hiện toast báo đây chỉ là xóa cục bộ ở demo mode.
+- `pending`
+- `awaiting_payment`
+- không phải thanh toán `cash`
 
-Trường hợp này không gọi backend.
+Trình tự chạy như sau:
 
-## Trường hợp 2: Backend session thật
+1. Buyer mở `OrderDetailActivity`.
+2. Màn hình tính ra nút chính là `Tạo liên kết thanh toán`.
+3. Người dùng bấm nút đó.
+4. `OrderDetailActivity` gọi `PaymentRemoteRepository.requestUpfrontPayment(...)`.
+5. Repository dùng `PaymentApiService` để gọi `POST /api/payments/orders/{orderId}/request`.
+6. Backend trả về `checkoutUrl`, `qrCodeUrl`, `transferContent`, `bankAccountNumber`, `amount`, `expiresAt`...
+7. Repository map dữ liệu sang `PaymentRequestInfo`.
+8. `OrderDetailActivity` hiển thị card `Yêu cầu thanh toán`.
+9. Nếu có link, người dùng có thể bấm `Mở trang thanh toán`.
+10. Sau đó màn hình tải thêm `GET /api/payments/orders/{orderId}` để hiển thị lịch sử thanh toán bên dưới.
 
-1. Người dùng mở tab `Wishlist` với backend session đang hoạt động.
-2. `WishlistFragment` đang hiển thị dữ liệu thật.
-3. Người dùng bấm `Remove` trên một card.
+## 5. Luồng runtime của Order Action theo vai trò
+
+### Seller flow
+
+#### Tiếp nhận đơn
+
+1. Seller mở `OrderDetailActivity`.
+2. Nếu đơn đang là `pending` và tiền đang `unpaid`, app hiện nút `Tiếp nhận đơn`.
+3. Khi bấm nút, app gọi:
+   - `PATCH /api/orders/{orderId}/accept`
+4. Backend cập nhật order.
+5. Mobile nhận response mới, map lại sang `OrderPreview`.
+6. UI bind lại toàn bộ status, timeline và action tiếp theo.
+
+#### Xác nhận đã nhận cọc tiền mặt
+
+1. Nếu payment method là `cash`, seller có thể xác nhận đã nhận cọc.
+2. Mobile gọi:
+   - `PATCH /api/orders/{orderId}/confirm-deposit`
+3. Backend đổi order sang trạng thái đã đặt cọc.
+4. UI cập nhật lại ngay trên màn detail.
+
+#### Xác nhận đã giao xe
+
+1. Khi order đã ở trạng thái `deposited`, seller có thể bấm `Xác nhận đã giao xe`.
+2. Mobile gọi:
+   - `PATCH /api/orders/{orderId}/complete`
+3. Backend chuyển order sang bước chờ buyer xác nhận.
+4. UI đổi nút hành động tương ứng.
+
+### Buyer flow
+
+#### Tạo liên kết thanh toán
+
+Phần này đã giải thích ở mục 4.
+
+#### Xác nhận đã nhận xe
+
+1. Buyer mở `OrderDetailActivity`.
+2. Nếu order ở trạng thái:
+   - `awaiting_buyer_confirmation`
+   - funding status là `held`
+3. App hiện nút `Xác nhận đã nhận xe`.
+4. Mobile gọi:
+   - `PATCH /api/orders/{orderId}/confirm-received`
+5. Backend hoàn tất giao dịch.
+6. UI bind lại trạng thái cuối cùng.
+
+### Huỷ đơn
+
+Mobile không cho hiện nút huỷ ở các trạng thái đã quá muộn như:
+
+- `deposited`
+- `awaiting_buyer_confirmation`
+- `completed`
+- funding status `held`, `released`, `refunded`...
+
+Điều này giúp UI không gợi ý hành động mà backend chắc chắn sẽ từ chối.
+
+## 6. Luồng runtime của Remove Wishlist
+
+### Trường hợp 1: Demo mode
+
+1. Người dùng mở `Wishlist` bằng demo mode.
+2. Danh sách lấy từ `FakeMarketplaceRepository`.
+3. Người dùng bấm `Xoá`.
+4. Adapter xoá item ngay trong list local.
+5. App hiện toast báo đây chỉ là xoá cục bộ.
+
+### Trường hợp 2: Backend session thật
+
+1. Người dùng mở `Wishlist` khi đã đăng nhập.
+2. `WishlistFragment` hiển thị dữ liệu thật.
+3. Người dùng bấm `Xoá`.
 4. `WishlistFragment` gọi `WishlistRemoteRepository.removeProduct(...)`.
-5. Repository dùng `WishlistApiService` gọi `DELETE /api/wishlist/{productId}`.
-6. Nếu backend thành công, adapter xóa item khỏi danh sách.
-7. Nếu xóa xong mà danh sách rỗng, UI chuyển sang `empty state`.
-8. Nếu backend lỗi, `SectionStateController` hiện `error state` với nút `Retry`.
+5. Repository gọi:
+   - `DELETE /api/wishlist/{productId}`
+6. Nếu thành công, item bị xoá khỏi adapter.
+7. Nếu danh sách rỗng, UI chuyển sang `empty state`.
+8. Nếu lỗi, `SectionStateController` hiện `error state`.
 
-## 5. Vì sao ProductAdapter được mở rộng thay vì tạo adapter mới?
+## 7. Vì sao cần `OrderPreviewMapper`?
 
-Trong project này, `ProductAdapter` vốn đã được dùng cho:
+Backend trả về `RemoteOrderResponse`, nhưng UI không nên đọc object network trực tiếp ở mọi nơi.
 
-- `Home`
-- `Wishlist`
+Vì vậy project dùng `OrderPreviewMapper` để:
 
-Để tránh tạo thêm một adapter gần như giống hệt chỉ khác mỗi nút phụ, project mở rộng `ProductAdapter` theo hướng:
+- đổi giá trị raw sang label dễ đọc
+- chọn màu card theo trạng thái
+- tính số tiền nên nổi bật trên UI
+- gom thông tin người mua, người bán, timeline thành chuỗi dễ hiển thị
 
-- vẫn có click mở detail như cũ
-- có thể truyền thêm `actionLabel` và `actionListener` khi cần
+Điều này giúp:
 
-Kết quả:
-
-- `Home` không bị ảnh hưởng
-- `Wishlist` có thêm nút `Remove`
+- `OrdersFragment` và `OrderDetailActivity` không phải tự làm lại cùng một logic
 - code gọn hơn
+- thay đổi cách hiển thị chỉ cần sửa một chỗ
 
-## 6. Những file chính nên đọc
+## 8. Những file chính nên đọc
 
 - `app/src/main/java/com/example/mobile_obs_asm/OrderDetailActivity.java`
+- `app/src/main/java/com/example/mobile_obs_asm/data/OrderRemoteRepository.java`
+- `app/src/main/java/com/example/mobile_obs_asm/data/PaymentRemoteRepository.java`
+- `app/src/main/java/com/example/mobile_obs_asm/network/order/OrderApiService.java`
+- `app/src/main/java/com/example/mobile_obs_asm/network/payment/PaymentApiService.java`
 - `app/src/main/java/com/example/mobile_obs_asm/model/OrderPreview.java`
-- `app/src/main/java/com/example/mobile_obs_asm/ui/orders/OrderAdapter.java`
-- `app/src/main/java/com/example/mobile_obs_asm/ui/orders/OrdersFragment.java`
-- `app/src/main/java/com/example/mobile_obs_asm/ui/home/ProductAdapter.java`
-- `app/src/main/java/com/example/mobile_obs_asm/ui/wishlist/WishlistFragment.java`
-- `app/src/main/java/com/example/mobile_obs_asm/data/WishlistRemoteRepository.java`
+- `app/src/main/java/com/example/mobile_obs_asm/model/PaymentRequestInfo.java`
+- `app/src/main/java/com/example/mobile_obs_asm/model/PaymentHistoryItem.java`
+- `app/src/main/java/com/example/mobile_obs_asm/util/OrderPreviewMapper.java`
 - `app/src/main/res/layout/activity_order_detail.xml`
-- `app/src/main/res/layout/item_product_card.xml`
 
-## 7. Sơ đồ luồng đơn giản
+## 9. Sơ đồ luồng đơn giản
 
 ```mermaid
-flowchart TD
-    A[OrdersFragment] --> B[OrderAdapter]
-    B --> C[OrderDetailActivity]
-    D[WishlistFragment] --> E[ProductAdapter]
-    E --> F{Demo hay backend session?}
-    F -- Demo --> G[Xóa local item]
-    F -- Backend --> H[WishlistRemoteRepository]
-    H --> I[DELETE /api/wishlist/{productId}]
-    I --> J[Adapter cập nhật lại list]
-    J --> K[Empty state nếu danh sách rỗng]
+sequenceDiagram
+    participant U as User
+    participant OD as OrderDetailActivity
+    participant OR as OrderRemoteRepository
+    participant PR as PaymentRemoteRepository
+    participant API as API Service
+    participant BE as Spring Boot Backend
+
+    U->>OD: Mở chi tiết đơn
+    OD->>PR: fetchOrderPayments(orderId)
+    PR->>API: GET /api/payments/orders/{orderId}
+    API->>BE: request
+    BE-->>API: payment history
+    API-->>PR: response
+    PR-->>OD: List<PaymentHistoryItem>
+    OD-->>U: Hiển thị lịch sử thanh toán
+
+    U->>OD: Bấm nút hành động
+    alt Buyer tạo liên kết thanh toán
+        OD->>PR: requestUpfrontPayment(orderId)
+        PR->>API: POST /api/payments/orders/{orderId}/request
+        API->>BE: request
+        BE-->>API: PaymentRequestResponseDTO
+        API-->>PR: response
+        PR-->>OD: PaymentRequestInfo
+        OD-->>U: Hiển thị card thanh toán + link
+    else Seller hoặc Buyer cập nhật trạng thái đơn
+        OD->>OR: accept/confirmDeposit/complete/confirmReceived/cancel
+        OR->>API: PATCH /api/orders/{orderId}/...
+        API->>BE: request
+        BE-->>API: RemoteOrderResponse
+        API-->>OR: response
+        OR-->>OD: OrderPreview mới
+        OD-->>U: Bind lại trạng thái và nút mới
+    end
 ```
 
-## 8. Sai lầm thường gặp
+## 10. Sai lầm thường gặp
 
-### Chỉ cho xem list mà không có detail
+### Chỉ hiển thị danh sách order mà không có bước tiếp theo
 
-Điều này làm người dùng không biết tiếp theo nên làm gì với một order cụ thể.
+Người dùng sẽ không biết sau khi xem order thì phải bấm gì để tiếp tục giao dịch.
 
-### Xóa wishlist nhưng không cập nhật UI ngay
+### Để UI gợi ý hành động mà backend không cho phép
 
-Nếu backend xóa xong mà adapter không xóa item khỏi danh sách, người dùng sẽ tưởng app lỗi.
+Ví dụ hiện nút `Huỷ đơn` khi order đã được giữ tiền. Người dùng bấm vào sẽ nhận lỗi và cảm thấy app thiếu tin cậy.
 
-### Không phân biệt demo mode và backend mode
+### Không tách lớp map dữ liệu
 
-Nếu demo mode mà vẫn giả vờ gọi backend, bạn sẽ gặp:
+Nếu `Fragment` và `Activity` cùng tự xử lý raw status, app sẽ dễ bị lặp code và dễ hiển thị không đồng nhất.
 
-- id giả
-- request sai
-- trải nghiệm khó hiểu
+### Không phân biệt demo mode và backend mode trong wishlist
 
-Project này xử lý rõ:
+Nếu demo mode vẫn cố gọi API thật, bạn sẽ gặp id giả và hành vi rất khó hiểu.
 
-- demo mode thì xóa local
-- backend mode thì gọi API thật
+## 11. Điều quan trọng cần nhớ
 
-## 9. Điều quan trọng cần nhớ
+Một màn `Order Detail` tốt không chỉ “show data”.
 
-Một list screen tốt thường cần hai hướng thao tác:
+Nó phải trả lời được ba câu hỏi:
 
-- đi sâu vào detail
-- chỉnh lại chính item trong list
+1. đơn đang ở bước nào
+2. số tiền liên quan là bao nhiêu
+3. người dùng phải làm gì tiếp theo
 
-Lần cập nhật này làm đúng hai điều đó:
+Lần cập nhật này giúp màn detail đi đúng hướng đó:
 
-- `Orders` giờ đi sâu được vào `Order Detail`
-- `Wishlist` giờ bỏ item ra được
-
-Đó là bước nhỏ nhưng rất quan trọng để app bớt cảm giác “chỉ là demo UI”.
+- có phần thanh toán rõ ràng hơn
+- có lịch sử thanh toán
+- có nút hành động theo buyer/seller
+- có ràng buộc huỷ đơn gần với backend hơn
+- wishlist cũng có luồng xoá rõ ràng để app bớt cảm giác chỉ là demo UI

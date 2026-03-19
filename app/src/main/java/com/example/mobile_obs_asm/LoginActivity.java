@@ -41,7 +41,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         if (SessionManager.getInstance(this).hasActiveSession()) {
-            startActivity(MainActivity.createIntent(this, R.id.navigation_home));
+            startActivity(MainActivity.createIntent(this, MainActivity.defaultStartDestination(this)));
             finish();
             return;
         }
@@ -97,7 +97,10 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 setAuthActionLoading(false);
                 Toast.makeText(LoginActivity.this, R.string.login_backend_success, Toast.LENGTH_SHORT).show();
-                startActivity(MainActivity.createIntent(LoginActivity.this, R.id.navigation_home));
+                startActivity(MainActivity.createIntent(
+                        LoginActivity.this,
+                        MainActivity.defaultStartDestination(LoginActivity.this)
+                ));
                 finish();
             }
 

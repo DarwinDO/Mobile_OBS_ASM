@@ -20,6 +20,13 @@ public class OrderPreview implements Parcelable {
     private final String partiesLabel;
     private final String summaryNote;
     private final boolean remoteSource;
+    private final String rawStatus;
+    private final String rawFundingStatus;
+    private final String rawPaymentMethod;
+    private final String rawPaymentOption;
+    private final long totalAmount;
+    private final long requiredUpfrontAmount;
+    private final long remainingAmount;
 
     public OrderPreview(String id, String title, String timeline, long amount, String status, @ColorRes int statusColorRes) {
         this(
@@ -35,7 +42,14 @@ public class OrderPreview implements Parcelable {
                 "Đang cập nhật",
                 "Thông tin người mua và người bán",
                 "Đây là dữ liệu tham khảo để mô phỏng quy trình đơn mua trên ứng dụng di động.",
-                false
+                false,
+                "",
+                "",
+                "",
+                "",
+                amount,
+                amount,
+                amount
         );
     }
 
@@ -54,6 +68,52 @@ public class OrderPreview implements Parcelable {
             String summaryNote,
             boolean remoteSource
     ) {
+        this(
+                id,
+                title,
+                timeline,
+                amount,
+                status,
+                statusColorRes,
+                fundingStatus,
+                paymentMethod,
+                createdAtLabel,
+                deadlineLabel,
+                partiesLabel,
+                summaryNote,
+                remoteSource,
+                "",
+                "",
+                "",
+                "",
+                amount,
+                amount,
+                amount
+        );
+    }
+
+    public OrderPreview(
+            String id,
+            String title,
+            String timeline,
+            long amount,
+            String status,
+            @ColorRes int statusColorRes,
+            String fundingStatus,
+            String paymentMethod,
+            String createdAtLabel,
+            String deadlineLabel,
+            String partiesLabel,
+            String summaryNote,
+            boolean remoteSource,
+            String rawStatus,
+            String rawFundingStatus,
+            String rawPaymentMethod,
+            String rawPaymentOption,
+            long totalAmount,
+            long requiredUpfrontAmount,
+            long remainingAmount
+    ) {
         this.id = id;
         this.title = title;
         this.timeline = timeline;
@@ -67,6 +127,13 @@ public class OrderPreview implements Parcelable {
         this.partiesLabel = partiesLabel;
         this.summaryNote = summaryNote;
         this.remoteSource = remoteSource;
+        this.rawStatus = rawStatus;
+        this.rawFundingStatus = rawFundingStatus;
+        this.rawPaymentMethod = rawPaymentMethod;
+        this.rawPaymentOption = rawPaymentOption;
+        this.totalAmount = totalAmount;
+        this.requiredUpfrontAmount = requiredUpfrontAmount;
+        this.remainingAmount = remainingAmount;
     }
 
     protected OrderPreview(Parcel in) {
@@ -83,6 +150,13 @@ public class OrderPreview implements Parcelable {
         partiesLabel = in.readString();
         summaryNote = in.readString();
         remoteSource = in.readByte() != 0;
+        rawStatus = in.readString();
+        rawFundingStatus = in.readString();
+        rawPaymentMethod = in.readString();
+        rawPaymentOption = in.readString();
+        totalAmount = in.readLong();
+        requiredUpfrontAmount = in.readLong();
+        remainingAmount = in.readLong();
     }
 
     public String getId() {
@@ -137,6 +211,34 @@ public class OrderPreview implements Parcelable {
         return remoteSource;
     }
 
+    public String getRawStatus() {
+        return rawStatus;
+    }
+
+    public String getRawFundingStatus() {
+        return rawFundingStatus;
+    }
+
+    public String getRawPaymentMethod() {
+        return rawPaymentMethod;
+    }
+
+    public String getRawPaymentOption() {
+        return rawPaymentOption;
+    }
+
+    public long getTotalAmount() {
+        return totalAmount;
+    }
+
+    public long getRequiredUpfrontAmount() {
+        return requiredUpfrontAmount;
+    }
+
+    public long getRemainingAmount() {
+        return remainingAmount;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -157,6 +259,13 @@ public class OrderPreview implements Parcelable {
         dest.writeString(partiesLabel);
         dest.writeString(summaryNote);
         dest.writeByte((byte) (remoteSource ? 1 : 0));
+        dest.writeString(rawStatus);
+        dest.writeString(rawFundingStatus);
+        dest.writeString(rawPaymentMethod);
+        dest.writeString(rawPaymentOption);
+        dest.writeLong(totalAmount);
+        dest.writeLong(requiredUpfrontAmount);
+        dest.writeLong(remainingAmount);
     }
 
     public static final Creator<OrderPreview> CREATOR = new Creator<OrderPreview>() {
