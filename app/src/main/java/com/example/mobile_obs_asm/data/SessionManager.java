@@ -72,7 +72,7 @@ public class SessionManager {
                 .putString(KEY_LAST_NAME, safe(authResponse.getUser().getLastName()))
                 .putString(KEY_ROLE, safe(authResponse.getUser().getRole()))
                 .putString(KEY_ADDRESS, safe(authResponse.getUser().getDefaultAddress()))
-                .apply();
+                .commit();
     }
 
     public boolean hasActiveSession() {
@@ -84,7 +84,7 @@ public class SessionManager {
     }
 
     public void clearSession() {
-        sharedPreferences.edit().clear().apply();
+        sharedPreferences.edit().clear().commit();
     }
 
     public UserProfile getStoredUserProfile() {

@@ -128,6 +128,97 @@ Các file chính:
 - `app/src/main/java/com/example/mobile_obs_asm/data/FakeMarketplaceRepository.java`
 - `app/src/main/java/com/example/mobile_obs_asm/data/ProductRemoteRepository.java`
 
+## Vì sao đã login nhưng tab protected vẫn có thể báo chưa đăng nhập?
+
+Đây là một lỗi rất hay gặp khi làm mobile app có token.
+
+### Nguyên nhân
+
+Trong Android, `SharedPreferences.apply()` là lưu bất đồng bộ.
+
+Điều đó có nghĩa là:
+
+1. App gọi lưu token.
+2. Hệ thống nhận yêu cầu lưu.
+3. Nhưng dữ liệu chưa chắc đã được ghi xong ngay tại thời điểm dòng code tiếp theo chạy.
+
+Nếu app vừa lưu token xong đã chuyển màn ngay, các request kế tiếp có thể chạy khi token vẫn chưa sẵn sàng trong storage.
+
+### Cách sửa trong project này
+
+`SessionManager.saveAuthSession(...)` đã được đổi từ:
+
+- `apply()`
+
+sang:
+
+- `commit()`
+
+`commit()` là lưu đồng bộ, nghĩa là app chỉ đi tiếp sau khi token đã được ghi xong.
+
+Điều này đặc biệt quan trọng với luồng:
+
+1. login thành công
+2. mở `MainActivity`
+3. người dùng bấm ngay sang `Wishlist` hoặc `Orders`
+
+Các file chính:
+
+- `app/src/main/java/com/example/mobile_obs_asm/data/SessionManager.java`
+- `app/src/main/java/com/example/mobile_obs_asm/LoginActivity.java`
+- `app/src/main/java/com/example/mobile_obs_asm/network/AuthHeaderInterceptor.java`
+
+## Biến chip thành filter thật trong Home
+
+### Vấn đề cũ
+
+4 nhóm:
+
+- Đường trường
+- Địa hình nhẹ
+- Đi phố
+- Cổ điển
+
+trước đây chỉ là `TextView`.
+
+Nghĩa là chúng chỉ hiển thị chứ không có hành vi.
+
+### Cách sửa
+
+`Home` bây giờ dùng `ChipGroup` và `Chip` checkable.
+
+Luồng chạy:
+
+1. Người dùng chạm vào một chip.
+2. `HomeFragment` nhận biết chip nào đang được chọn.
+3. App lọc lại `sourceProducts`.
+4. Adapter nhận danh sách mới.
+5. RecyclerView hiển thị đúng nhóm xe tương ứng.
+
+Nếu bộ lọc không có kết quả:
+
+- app hiện state card báo chưa có xe trong nhóm đó
+- kèm nút `Bỏ lọc`
+
+Các file chính:
+
+- `app/src/main/res/layout/fragment_home.xml`
+- `app/src/main/java/com/example/mobile_obs_asm/ui/home/HomeFragment.java`
+
+## Ghi chú về mock data
+
+Ở thời điểm hiện tại, `Home` vẫn có thể hiển thị mock data trong 2 trường hợp:
+
+1. backend chưa trả về sản phẩm
+2. app không kết nối được backend sản phẩm
+
+Mục tiêu của mock data trong nhánh này là:
+
+- giữ cho UI luôn có thứ để xem và để bấm
+- tránh cảm giác app bị "chết"
+
+Nhưng với `Wishlist` và `Orders`, khi người dùng đã đăng nhập và backend trả dữ liệu thật thì app sẽ ưu tiên dữ liệu thật trước.
+
 ## Vì sao Profile phải bỏ placeholder?
 
 Những dòng như:
