@@ -28,6 +28,7 @@ public class HomeFragment extends Fragment {
     private ProductRemoteRepository productRemoteRepository;
     private RecyclerView recyclerView;
     private SectionStateController stateController;
+    private List<Product> fallbackProducts;
 
     @Nullable
     @Override
@@ -39,12 +40,12 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        List<Product> products = FakeMarketplaceRepository.getInstance().getFeaturedProducts();
+        fallbackProducts = FakeMarketplaceRepository.getInstance().getFeaturedProducts();
         productRemoteRepository = new ProductRemoteRepository(requireContext());
         recyclerView = view.findViewById(R.id.recyclerHomeProducts);
         stateController = new SectionStateController(view, R.id.layoutHomeState);
         MaterialButton heroButton = view.findViewById(R.id.buttonHeroExplore);
-        adapter = new ProductAdapter(products, this::openProductDetail);
+        adapter = new ProductAdapter(fallbackProducts, this::openProductDetail);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setNestedScrollingEnabled(false);
@@ -73,15 +74,18 @@ public class HomeFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
-                adapter.replaceProducts(value);
                 if (value.isEmpty()) {
-                    recyclerView.setVisibility(View.GONE);
+                    adapter.replaceProducts(fallbackProducts);
+                    recyclerView.setVisibility(adapter.getItemCount() > 0 ? View.VISIBLE : View.GONE);
                     stateController.showMessage(
                             getString(R.string.state_home_empty_title),
-                            getString(R.string.state_home_empty_message)
+                            getString(R.string.state_home_empty_message),
+                            getString(R.string.state_action_retry),
+                            retryView -> loadProducts()
                     );
                     return;
                 }
+                adapter.replaceProducts(value);
                 recyclerView.setVisibility(View.VISIBLE);
                 stateController.hide();
             }
@@ -91,6 +95,7 @@ public class HomeFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
+                adapter.replaceProducts(fallbackProducts);
                 recyclerView.setVisibility(adapter.getItemCount() > 0 ? View.VISIBLE : View.GONE);
                 stateController.showMessage(
                         getString(R.string.state_home_error_title),

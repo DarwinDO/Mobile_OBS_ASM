@@ -11,6 +11,7 @@ import com.example.mobile_obs_asm.network.order.OrderApiService;
 import com.example.mobile_obs_asm.network.order.RemoteOrderResponse;
 import com.example.mobile_obs_asm.util.ApiErrorMessageExtractor;
 import com.example.mobile_obs_asm.util.DateLabelFormatter;
+import com.example.mobile_obs_asm.util.DisplayLabelFormatter;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ public class OrderRemoteRepository {
             public void onResponse(Call<ApiEnvelope<RemoteOrderResponse>> call, Response<ApiEnvelope<RemoteOrderResponse>> response) {
                 if (!response.isSuccessful() || response.body() == null || response.body().getResult() == null) {
                     callback.onError(
-                            ApiErrorMessageExtractor.extract(response, "Order request was rejected by the backend."),
+                            ApiErrorMessageExtractor.extract(response, "Không thể tạo yêu cầu mua lúc này."),
                             null
                     );
                     return;
@@ -60,7 +61,7 @@ public class OrderRemoteRepository {
 
             @Override
             public void onFailure(Call<ApiEnvelope<RemoteOrderResponse>> call, Throwable throwable) {
-                callback.onError("Could not reach create order endpoint.", throwable);
+                callback.onError("Không thể kết nối để tạo yêu cầu mua.", throwable);
             }
         });
     }
@@ -76,7 +77,7 @@ public class OrderRemoteRepository {
                     callback.onError(
                             ApiErrorMessageExtractor.extract(
                                     response,
-                                    resolveErrorMessage(response.code(), "Order list response was not accepted by the backend.")
+                                    resolveErrorMessage(response.code(), "Không thể đọc danh sách đơn mua từ máy chủ.")
                             ),
                             null
                     );
@@ -92,20 +93,27 @@ public class OrderRemoteRepository {
 
             @Override
             public void onFailure(Call<ApiEnvelope<List<RemoteOrderResponse>>> call, Throwable throwable) {
-                callback.onError("Could not reach order list endpoint.", throwable);
+                callback.onError("Không thể kết nối để tải danh sách đơn mua.", throwable);
             }
         });
     }
 
     private OrderPreview mapOrder(RemoteOrderResponse remoteOrder) {
-        String status = formatEnum(remoteOrder.getStatus());
+        String status = formatValue(remoteOrder.getStatus());
         return new OrderPreview(
-                shortenOrderId(remoteOrder.getId()),
-                fallback(remoteOrder.getProductTitle(), "Order item"),
+                fallback(remoteOrder.getId(), "Đơn mua"),
+                fallback(remoteOrder.getProductTitle(), "Sản phẩm đang cập nhật"),
                 buildTimeline(remoteOrder),
                 resolveDisplayAmount(remoteOrder).longValue(),
                 status,
-                pickStatusColor(remoteOrder.getStatus(), remoteOrder.getFundingStatus())
+                pickStatusColor(remoteOrder.getStatus(), remoteOrder.getFundingStatus()),
+                formatValue(remoteOrder.getFundingStatus()),
+                formatValue(remoteOrder.getPaymentMethod()),
+                emptyFallback(DateLabelFormatter.formatIsoDateTime(remoteOrder.getCreatedAt())),
+                emptyFallback(DateLabelFormatter.formatIsoDateTime(remoteOrder.getPaymentDeadline())),
+                buildPartiesLabel(remoteOrder),
+                buildSummaryNote(remoteOrder),
+                true
         );
     }
 
@@ -125,27 +133,32 @@ public class OrderRemoteRepository {
     private String buildTimeline(RemoteOrderResponse remoteOrder) {
         String deadline = DateLabelFormatter.formatIsoDateTime(remoteOrder.getPaymentDeadline());
         if (!deadline.isEmpty()) {
-            return "Payment deadline " + deadline;
+            return "Hạn thanh toán: " + deadline;
         }
 
         String acceptedAt = DateLabelFormatter.formatIsoDateTime(remoteOrder.getAcceptedAt());
         if (!acceptedAt.isEmpty()) {
-            return "Accepted " + acceptedAt + " • Funding " + formatEnum(remoteOrder.getFundingStatus());
+            return "Đã được tiếp nhận lúc " + acceptedAt + " • " + formatValue(remoteOrder.getFundingStatus());
         }
 
         String createdAt = DateLabelFormatter.formatIsoDateTime(remoteOrder.getCreatedAt());
         if (!createdAt.isEmpty()) {
-            return "Created " + createdAt;
+            return "Tạo lúc " + createdAt;
         }
 
-        return "Funding " + formatEnum(remoteOrder.getFundingStatus());
+        return "Trạng thái tiền: " + formatValue(remoteOrder.getFundingStatus());
     }
 
-    private String shortenOrderId(String rawId) {
-        if (rawId == null || rawId.length() < 6) {
-            return "ORDER";
-        }
-        return "ORD-" + rawId.substring(0, 6).toUpperCase();
+    private String buildPartiesLabel(RemoteOrderResponse remoteOrder) {
+        return "Người mua: " + fallback(remoteOrder.getBuyerName(), "Đang cập nhật")
+                + " • Người bán: " + fallback(remoteOrder.getSellerName(), "Đang cập nhật");
+    }
+
+    private String buildSummaryNote(RemoteOrderResponse remoteOrder) {
+        return "Hình thức thanh toán: "
+                + formatValue(remoteOrder.getPaymentOption())
+                + " • Trạng thái tiền: "
+                + formatValue(remoteOrder.getFundingStatus());
     }
 
     private int pickStatusColor(String rawStatus, String rawFundingStatus) {
@@ -170,32 +183,21 @@ public class OrderRemoteRepository {
         return R.color.card_sand;
     }
 
-    private String formatEnum(String rawValue) {
-        if (rawValue == null || rawValue.isEmpty()) {
-            return "Unknown";
-        }
-        String normalized = rawValue.toLowerCase().replace('_', ' ');
-        String[] words = normalized.split(" ");
-        StringBuilder builder = new StringBuilder();
-        for (String word : words) {
-            if (word.isEmpty()) {
-                continue;
-            }
-            if (builder.length() > 0) {
-                builder.append(' ');
-            }
-            builder.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
-        }
-        return builder.toString();
+    private String formatValue(String rawValue) {
+        return DisplayLabelFormatter.formatValue(rawValue);
     }
 
     private String fallback(String value, String fallback) {
         return value == null || value.isEmpty() ? fallback : value;
     }
 
+    private String emptyFallback(String value) {
+        return value == null || value.isEmpty() ? "Đang cập nhật" : value;
+    }
+
     private String resolveErrorMessage(int statusCode, String fallbackMessage) {
         if (statusCode == 401 || statusCode == 403) {
-            return "Please sign in with a backend account to load your orders.";
+            return "Hãy đăng nhập để xem đơn mua của bạn.";
         }
         return fallbackMessage;
     }

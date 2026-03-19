@@ -12,6 +12,7 @@ import com.example.mobile_obs_asm.ui.home.HomeFragment;
 import com.example.mobile_obs_asm.ui.orders.OrdersFragment;
 import com.example.mobile_obs_asm.ui.profile.ProfileFragment;
 import com.example.mobile_obs_asm.ui.wishlist.WishlistFragment;
+import com.example.mobile_obs_asm.util.SystemBarInsetsHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -33,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        SystemBarInsetsHelper.applyToRoot(findViewById(R.id.main));
 
         toolbar = findViewById(R.id.toolbarMain);
         bottomNavigationView = findViewById(R.id.bottomNavigation);

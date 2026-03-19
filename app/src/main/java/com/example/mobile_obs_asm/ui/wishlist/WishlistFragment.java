@@ -1,10 +1,10 @@
 package com.example.mobile_obs_asm.ui.wishlist;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mobile_obs_asm.LoginActivity;
+import com.example.mobile_obs_asm.MainActivity;
 import com.example.mobile_obs_asm.ProductDetailActivity;
 import com.example.mobile_obs_asm.R;
 import com.example.mobile_obs_asm.data.FakeMarketplaceRepository;
@@ -22,6 +23,7 @@ import com.example.mobile_obs_asm.data.WishlistRemoteRepository;
 import com.example.mobile_obs_asm.model.Product;
 import com.example.mobile_obs_asm.ui.common.SectionStateController;
 import com.example.mobile_obs_asm.ui.home.ProductAdapter;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.List;
 
@@ -49,7 +51,9 @@ public class WishlistFragment extends Fragment {
         recyclerView.setNestedScrollingEnabled(false);
         adapter = new ProductAdapter(
                 FakeMarketplaceRepository.getInstance().getWishlistProducts(),
-                product -> startActivity(ProductDetailActivity.createIntent(requireContext(), product))
+                product -> startActivity(ProductDetailActivity.createIntent(requireContext(), product)),
+                R.string.product_action_remove,
+                this::handleRemoveAction
         );
         recyclerView.setAdapter(adapter);
 
@@ -88,7 +92,9 @@ public class WishlistFragment extends Fragment {
                     recyclerView.setVisibility(View.GONE);
                     stateController.showMessage(
                             getString(R.string.state_wishlist_empty_title),
-                            getString(R.string.state_wishlist_empty_message)
+                            getString(R.string.state_wishlist_empty_message),
+                            getString(R.string.state_action_browse),
+                            actionView -> navigateToMainSection(R.id.navigation_home)
                     );
                     return;
                 }
@@ -113,7 +119,81 @@ public class WishlistFragment extends Fragment {
     }
 
     private void openSignIn() {
-        startActivity(new Intent(requireContext(), LoginActivity.class));
+        startActivity(LoginActivity.createIntent(requireContext(), null));
         requireActivity().finish();
+    }
+
+    private void navigateToMainSection(int destinationId) {
+        BottomNavigationView bottomNavigationView = requireActivity().findViewById(R.id.bottomNavigation);
+        if (bottomNavigationView != null) {
+            bottomNavigationView.setSelectedItemId(destinationId);
+            return;
+        }
+        startActivity(MainActivity.createIntent(requireContext(), destinationId));
+    }
+
+    private void handleRemoveAction(Product product) {
+        if (!SessionManager.getInstance(requireContext()).hasActiveSession()) {
+            FakeMarketplaceRepository.getInstance().removeWishlistProduct(product.getId());
+            adapter.removeProduct(product);
+            Toast.makeText(requireContext(), R.string.wishlist_remove_demo_toast, Toast.LENGTH_SHORT).show();
+            updateWishlistStateAfterRemoval(true);
+            return;
+        }
+
+        stateController.showLoading(
+                getString(R.string.wishlist_remove_loading_title),
+                getString(R.string.wishlist_remove_loading_message)
+        );
+
+        wishlistRemoteRepository.removeProduct(product.getId(), new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void value) {
+                if (!isAdded()) {
+                    return;
+                }
+                adapter.removeProduct(product);
+                Toast.makeText(requireContext(), R.string.wishlist_remove_success_toast, Toast.LENGTH_SHORT).show();
+                updateWishlistStateAfterRemoval(false);
+            }
+
+            @Override
+            public void onError(String message, Throwable throwable) {
+                if (!isAdded()) {
+                    return;
+                }
+                stateController.showMessage(
+                        getString(R.string.state_wishlist_error_title),
+                        message,
+                        getString(R.string.state_action_retry),
+                        actionView -> handleRemoveAction(product)
+                );
+            }
+        });
+    }
+
+    private void updateWishlistStateAfterRemoval(boolean demoMode) {
+        if (adapter.getItemCount() == 0) {
+            recyclerView.setVisibility(View.GONE);
+            stateController.showMessage(
+                    getString(R.string.state_wishlist_empty_title),
+                    getString(R.string.state_wishlist_empty_message),
+                    getString(R.string.state_action_browse),
+                    actionView -> navigateToMainSection(R.id.navigation_home)
+            );
+            return;
+        }
+
+        recyclerView.setVisibility(View.VISIBLE);
+        if (demoMode) {
+            stateController.showMessage(
+                    getString(R.string.state_wishlist_demo_title),
+                    getString(R.string.state_wishlist_demo_message),
+                    getString(R.string.state_action_sign_in),
+                    actionView -> openSignIn()
+            );
+            return;
+        }
+        stateController.hide();
     }
 }

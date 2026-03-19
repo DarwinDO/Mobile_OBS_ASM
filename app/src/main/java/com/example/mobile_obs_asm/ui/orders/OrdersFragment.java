@@ -1,6 +1,5 @@
 package com.example.mobile_obs_asm.ui.orders;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +12,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mobile_obs_asm.LoginActivity;
+import com.example.mobile_obs_asm.MainActivity;
+import com.example.mobile_obs_asm.OrderDetailActivity;
 import com.example.mobile_obs_asm.R;
 import com.example.mobile_obs_asm.data.FakeMarketplaceRepository;
 import com.example.mobile_obs_asm.data.OrderRemoteRepository;
@@ -20,6 +21,7 @@ import com.example.mobile_obs_asm.data.RepositoryCallback;
 import com.example.mobile_obs_asm.data.SessionManager;
 import com.example.mobile_obs_asm.model.OrderPreview;
 import com.example.mobile_obs_asm.ui.common.SectionStateController;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.List;
 
@@ -45,7 +47,10 @@ public class OrdersFragment extends Fragment {
         stateController = new SectionStateController(view, R.id.layoutOrdersState);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setNestedScrollingEnabled(false);
-        adapter = new OrderAdapter(FakeMarketplaceRepository.getInstance().getOrderPreviews());
+        adapter = new OrderAdapter(
+                FakeMarketplaceRepository.getInstance().getOrderPreviews(),
+                order -> startActivity(OrderDetailActivity.createIntent(requireContext(), order))
+        );
         recyclerView.setAdapter(adapter);
 
         loadOrders();
@@ -83,7 +88,9 @@ public class OrdersFragment extends Fragment {
                     recyclerView.setVisibility(View.GONE);
                     stateController.showMessage(
                             getString(R.string.state_orders_empty_title),
-                            getString(R.string.state_orders_empty_message)
+                            getString(R.string.state_orders_empty_message),
+                            getString(R.string.state_action_browse),
+                            actionView -> navigateToMainSection(R.id.navigation_home)
                     );
                     return;
                 }
@@ -108,7 +115,16 @@ public class OrdersFragment extends Fragment {
     }
 
     private void openSignIn() {
-        startActivity(new Intent(requireContext(), LoginActivity.class));
+        startActivity(LoginActivity.createIntent(requireContext(), null));
         requireActivity().finish();
+    }
+
+    private void navigateToMainSection(int destinationId) {
+        BottomNavigationView bottomNavigationView = requireActivity().findViewById(R.id.bottomNavigation);
+        if (bottomNavigationView != null) {
+            bottomNavigationView.setSelectedItemId(destinationId);
+            return;
+        }
+        startActivity(MainActivity.createIntent(requireContext(), destinationId));
     }
 }

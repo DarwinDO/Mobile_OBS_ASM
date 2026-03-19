@@ -18,6 +18,7 @@ import com.example.mobile_obs_asm.model.Product;
 import com.example.mobile_obs_asm.network.order.RemoteOrderResponse;
 import com.example.mobile_obs_asm.ui.common.SectionStateController;
 import com.example.mobile_obs_asm.util.PriceFormatter;
+import com.example.mobile_obs_asm.util.SystemBarInsetsHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
@@ -73,6 +74,7 @@ public class CreateOrderActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_create_order);
+        SystemBarInsetsHelper.applyToRoot(findViewById(R.id.createOrderRoot));
 
         MaterialToolbar toolbar = findViewById(R.id.toolbarCreateOrder);
         toolbar.setNavigationOnClickListener(view -> finish());

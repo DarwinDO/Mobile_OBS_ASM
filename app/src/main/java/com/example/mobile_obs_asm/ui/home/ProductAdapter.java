@@ -6,12 +6,15 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mobile_obs_asm.R;
 import com.example.mobile_obs_asm.model.Product;
 import com.example.mobile_obs_asm.util.PriceFormatter;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
@@ -23,12 +26,29 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         void onProductClick(Product product);
     }
 
+    public interface OnProductActionClickListener {
+        void onProductActionClick(Product product);
+    }
+
     private final List<Product> products;
     private final OnProductClickListener listener;
+    private final int actionLabelRes;
+    private final OnProductActionClickListener actionListener;
 
     public ProductAdapter(List<Product> products, OnProductClickListener listener) {
+        this(products, listener, 0, null);
+    }
+
+    public ProductAdapter(
+            List<Product> products,
+            OnProductClickListener listener,
+            @StringRes int actionLabelRes,
+            @Nullable OnProductActionClickListener actionListener
+    ) {
         this.products = new ArrayList<>(products);
         this.listener = listener;
+        this.actionLabelRes = actionLabelRes;
+        this.actionListener = actionListener;
     }
 
     public void replaceProducts(List<Product> updatedProducts) {
@@ -39,6 +59,16 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
     public Product getFirstProduct() {
         return products.isEmpty() ? null : products.get(0);
+    }
+
+    public void removeProduct(Product product) {
+        for (int index = 0; index < products.size(); index++) {
+            if (products.get(index).getId().equals(product.getId())) {
+                products.remove(index);
+                notifyItemRemoved(index);
+                return;
+            }
+        }
     }
 
     @NonNull
@@ -59,6 +89,15 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         holder.textCoverLabel.setText(product.getCoverLabel());
         holder.cardCover.setCardBackgroundColor(ContextCompat.getColor(holder.itemView.getContext(), product.getCoverColorRes()));
         holder.cardView.setOnClickListener(v -> listener.onProductClick(product));
+        if (actionLabelRes != 0 && actionListener != null) {
+            holder.buttonAction.setVisibility(View.VISIBLE);
+            holder.buttonAction.setText(actionLabelRes);
+            holder.buttonAction.setOnClickListener(v -> actionListener.onProductActionClick(product));
+        } else {
+            holder.buttonAction.setVisibility(View.VISIBLE);
+            holder.buttonAction.setText(R.string.product_action_open_detail);
+            holder.buttonAction.setOnClickListener(v -> listener.onProductClick(product));
+        }
         holder.cardView.setContentDescription(
                 holder.itemView.getContext().getString(R.string.accessibility_open_product) + ": " + product.getTitle()
         );
@@ -78,6 +117,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         private final TextView textMeta;
         private final TextView textPrice;
         private final TextView textCoverLabel;
+        private final MaterialButton buttonAction;
 
         ProductViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -89,6 +129,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             textMeta = itemView.findViewById(R.id.textProductMeta);
             textPrice = itemView.findViewById(R.id.textProductPrice);
             textCoverLabel = itemView.findViewById(R.id.textProductCoverLabel);
+            buttonAction = itemView.findViewById(R.id.buttonProductAction);
         }
     }
 }

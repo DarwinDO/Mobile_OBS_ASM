@@ -8,7 +8,9 @@ import com.example.mobile_obs_asm.network.ApiEnvelope;
 import com.example.mobile_obs_asm.network.RetrofitClient;
 import com.example.mobile_obs_asm.network.wishlist.RemoteWishlistItemResponse;
 import com.example.mobile_obs_asm.network.wishlist.WishlistApiService;
+import com.example.mobile_obs_asm.util.ApiErrorMessageExtractor;
 import com.example.mobile_obs_asm.util.DateLabelFormatter;
+import com.example.mobile_obs_asm.util.DisplayLabelFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +35,13 @@ public class WishlistRemoteRepository {
                     Response<ApiEnvelope<List<RemoteWishlistItemResponse>>> response
             ) {
                 if (!response.isSuccessful() || response.body() == null || response.body().getResult() == null) {
-                    callback.onError(resolveErrorMessage(response.code(), "Wishlist response was not accepted by the backend."), null);
+                    callback.onError(
+                            ApiErrorMessageExtractor.extract(
+                                    response,
+                                    resolveErrorMessage(response.code(), "Không thể đọc dữ liệu mục yêu thích từ máy chủ.")
+                            ),
+                            null
+                    );
                     return;
                 }
 
@@ -46,7 +54,7 @@ public class WishlistRemoteRepository {
 
             @Override
             public void onFailure(Call<ApiEnvelope<List<RemoteWishlistItemResponse>>> call, Throwable throwable) {
-                callback.onError("Could not reach wishlist endpoint.", throwable);
+                callback.onError("Không thể kết nối để tải mục yêu thích.", throwable);
             }
         });
     }
@@ -59,7 +67,13 @@ public class WishlistRemoteRepository {
                     Response<ApiEnvelope<RemoteWishlistItemResponse>> response
             ) {
                 if (!response.isSuccessful() || response.body() == null || response.body().getResult() == null) {
-                    callback.onError(resolveErrorMessage(response.code(), "Wishlist update was rejected by the backend."), null);
+                    callback.onError(
+                            ApiErrorMessageExtractor.extract(
+                                    response,
+                                    resolveErrorMessage(response.code(), "Không thể cập nhật mục yêu thích lúc này.")
+                            ),
+                            null
+                    );
                     return;
                 }
                 callback.onSuccess(mapProduct(response.body().getResult()));
@@ -67,28 +81,52 @@ public class WishlistRemoteRepository {
 
             @Override
             public void onFailure(Call<ApiEnvelope<RemoteWishlistItemResponse>> call, Throwable throwable) {
-                callback.onError("Could not reach wishlist update endpoint.", throwable);
+                callback.onError("Không thể kết nối để lưu sản phẩm vào mục yêu thích.", throwable);
+            }
+        });
+    }
+
+    public void removeProduct(String productId, RepositoryCallback<Void> callback) {
+        wishlistApiService.removeProduct(productId).enqueue(new Callback<ApiEnvelope<Void>>() {
+            @Override
+            public void onResponse(Call<ApiEnvelope<Void>> call, Response<ApiEnvelope<Void>> response) {
+                if (!response.isSuccessful()) {
+                    callback.onError(
+                            ApiErrorMessageExtractor.extract(
+                                    response,
+                                    resolveErrorMessage(response.code(), "Không thể xoá sản phẩm khỏi mục yêu thích lúc này.")
+                            ),
+                            null
+                    );
+                    return;
+                }
+                callback.onSuccess(null);
+            }
+
+            @Override
+            public void onFailure(Call<ApiEnvelope<Void>> call, Throwable throwable) {
+                callback.onError("Không thể kết nối để xoá sản phẩm khỏi mục yêu thích.", throwable);
             }
         });
     }
 
     private Product mapProduct(RemoteWishlistItemResponse remoteItem) {
         String productId = fallback(remoteItem.getProductId(), "wishlist-item");
-        String title = fallback(remoteItem.getTitle(), "Saved listing");
-        String sellerName = fallback(remoteItem.getSellerName(), "Unknown seller");
-        String status = formatEnum(remoteItem.getStatus());
+        String title = fallback(remoteItem.getTitle(), "Xe đã lưu");
+        String sellerName = fallback(remoteItem.getSellerName(), "Người bán đang cập nhật");
+        String status = formatValue(remoteItem.getStatus());
         return new Product(
                 productId,
                 title,
-                "Saved seller: " + sellerName,
+                "Người bán: " + sellerName,
                 buildCoverLabel(title),
-                "Seller: " + sellerName,
+                "Người bán: " + sellerName,
                 status,
-                "Wishlist sync",
+                "Đã lưu vào yêu thích",
                 buildDescription(remoteItem),
-                "Pending from detail sync",
-                "Pending from detail sync",
-                "Pending from detail sync",
+                "Đang cập nhật",
+                "Đang cập nhật",
+                "Đang cập nhật",
                 remoteItem.getPrice() == null ? 0L : remoteItem.getPrice().longValue(),
                 pickHeroColor(productId),
                 pickCoverColor(productId),
@@ -99,14 +137,14 @@ public class WishlistRemoteRepository {
     private String buildDescription(RemoteWishlistItemResponse remoteItem) {
         String savedAt = DateLabelFormatter.formatIsoDateTime(remoteItem.getAddedAt());
         if (savedAt.isEmpty()) {
-            return "This item was saved in your backend wishlist. Open detail to fetch the full product profile.";
+            return "Sản phẩm này đã được lưu vào mục yêu thích của bạn. Hãy mở chi tiết để xem đầy đủ thông tin.";
         }
-        return "Saved on " + savedAt + ". Open detail to fetch the full product profile.";
+        return "Đã lưu lúc " + savedAt + ". Hãy mở chi tiết để xem đầy đủ thông tin.";
     }
 
     private String resolveErrorMessage(int statusCode, String fallbackMessage) {
         if (statusCode == 401 || statusCode == 403) {
-            return "Please sign in with a backend account to sync wishlist.";
+            return "Hãy đăng nhập để đồng bộ mục yêu thích của bạn.";
         }
         return fallbackMessage;
     }
@@ -122,23 +160,8 @@ public class WishlistRemoteRepository {
         return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
     }
 
-    private String formatEnum(String rawValue) {
-        if (rawValue == null || rawValue.isEmpty()) {
-            return "Unknown";
-        }
-        String normalized = rawValue.toLowerCase().replace('_', ' ');
-        String[] words = normalized.split(" ");
-        StringBuilder builder = new StringBuilder();
-        for (String word : words) {
-            if (word.isEmpty()) {
-                continue;
-            }
-            if (builder.length() > 0) {
-                builder.append(' ');
-            }
-            builder.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
-        }
-        return builder.toString();
+    private String formatValue(String rawValue) {
+        return DisplayLabelFormatter.formatValue(rawValue);
     }
 
     private String fallback(String value, String fallback) {

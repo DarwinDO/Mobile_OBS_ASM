@@ -13,16 +13,23 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.mobile_obs_asm.R;
 import com.example.mobile_obs_asm.model.OrderPreview;
 import com.example.mobile_obs_asm.util.PriceFormatter;
+import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
 
-    private final List<OrderPreview> orders;
+    public interface OnOrderClickListener {
+        void onOrderClick(OrderPreview order);
+    }
 
-    public OrderAdapter(List<OrderPreview> orders) {
+    private final List<OrderPreview> orders;
+    private final OnOrderClickListener listener;
+
+    public OrderAdapter(List<OrderPreview> orders, OnOrderClickListener listener) {
         this.orders = new ArrayList<>(orders);
+        this.listener = listener;
     }
 
     public void replaceOrders(List<OrderPreview> updatedOrders) {
@@ -48,6 +55,11 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         holder.textStatus.setBackgroundTintList(ColorStateList.valueOf(
                 ContextCompat.getColor(holder.itemView.getContext(), order.getStatusColorRes())
         ));
+        holder.itemView.setOnClickListener(view -> listener.onOrderClick(order));
+        holder.buttonAction.setOnClickListener(view -> listener.onOrderClick(order));
+        holder.itemView.setContentDescription(
+                holder.itemView.getContext().getString(R.string.accessibility_open_order) + ": " + order.getTitle()
+        );
     }
 
     @Override
@@ -60,6 +72,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         private final TextView textTitle;
         private final TextView textTimeline;
         private final TextView textAmount;
+        private final MaterialButton buttonAction;
 
         OrderViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -67,6 +80,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             textTitle = itemView.findViewById(R.id.textOrderTitle);
             textTimeline = itemView.findViewById(R.id.textOrderTimeline);
             textAmount = itemView.findViewById(R.id.textOrderAmount);
+            buttonAction = itemView.findViewById(R.id.buttonOrderAction);
         }
     }
 }

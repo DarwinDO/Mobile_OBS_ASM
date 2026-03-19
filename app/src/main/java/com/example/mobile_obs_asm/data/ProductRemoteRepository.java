@@ -9,6 +9,7 @@ import com.example.mobile_obs_asm.network.RetrofitClient;
 import com.example.mobile_obs_asm.network.SpringPageResponse;
 import com.example.mobile_obs_asm.network.product.ProductApiService;
 import com.example.mobile_obs_asm.network.product.RemoteProductResponse;
+import com.example.mobile_obs_asm.util.DisplayLabelFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ public class ProductRemoteRepository {
                     Response<ApiEnvelope<SpringPageResponse<RemoteProductResponse>>> response
             ) {
                 if (!response.isSuccessful() || response.body() == null || response.body().getResult() == null) {
-                    callback.onError("Product list response was empty.", null);
+                    callback.onError("Không thể đọc danh sách sản phẩm từ máy chủ.", null);
                     return;
                 }
 
@@ -52,7 +53,7 @@ public class ProductRemoteRepository {
 
             @Override
             public void onFailure(Call<ApiEnvelope<SpringPageResponse<RemoteProductResponse>>> call, Throwable throwable) {
-                callback.onError("Could not reach product list endpoint.", throwable);
+                callback.onError("Không thể kết nối để tải danh sách sản phẩm.", throwable);
             }
         });
     }
@@ -62,7 +63,7 @@ public class ProductRemoteRepository {
             @Override
             public void onResponse(Call<ApiEnvelope<RemoteProductResponse>> call, Response<ApiEnvelope<RemoteProductResponse>> response) {
                 if (!response.isSuccessful() || response.body() == null || response.body().getResult() == null) {
-                    callback.onError("Product detail response was empty.", null);
+                    callback.onError("Không thể đọc chi tiết sản phẩm từ máy chủ.", null);
                     return;
                 }
                 callback.onSuccess(mapProduct(response.body().getResult()));
@@ -70,7 +71,7 @@ public class ProductRemoteRepository {
 
             @Override
             public void onFailure(Call<ApiEnvelope<RemoteProductResponse>> call, Throwable throwable) {
-                callback.onError("Could not reach product detail endpoint.", throwable);
+                callback.onError("Không thể kết nối để tải chi tiết sản phẩm.", throwable);
             }
         });
     }
@@ -78,16 +79,16 @@ public class ProductRemoteRepository {
     private Product mapProduct(RemoteProductResponse remoteProduct) {
         return new Product(
                 remoteProduct.getId(),
-                fallback(remoteProduct.getTitle(), "Unnamed product"),
+                fallback(remoteProduct.getTitle(), "Xe đang cập nhật tên"),
                 buildTagline(remoteProduct),
                 buildCoverLabel(remoteProduct.getTitle()),
-                fallback(remoteProduct.getProvince(), "Location pending"),
-                formatEnum(remoteProduct.getCondition()),
+                fallback(remoteProduct.getProvince(), "Đang cập nhật khu vực"),
+                formatValue(remoteProduct.getCondition()),
                 buildBadge(remoteProduct),
-                fallback(remoteProduct.getDescription(), "Description will appear here after backend wiring."),
-                fallback(remoteProduct.getFrameSize(), "Pending"),
-                fallback(remoteProduct.getWheelSize(), "Pending"),
-                fallback(remoteProduct.getGroupset(), "Pending"),
+                fallback(remoteProduct.getDescription(), "Người bán chưa bổ sung mô tả chi tiết cho sản phẩm này."),
+                fallback(remoteProduct.getFrameSize(), "Đang cập nhật"),
+                fallback(remoteProduct.getWheelSize(), "Đang cập nhật"),
+                fallback(remoteProduct.getGroupset(), "Đang cập nhật"),
                 remoteProduct.getPrice() == null ? 0L : remoteProduct.getPrice().longValue(),
                 pickHeroColor(remoteProduct.getId()),
                 pickCoverColor(remoteProduct.getId()),
@@ -99,12 +100,12 @@ public class ProductRemoteRepository {
         String brandName = fallback(remoteProduct.getBrandName(), "");
         String description = fallback(remoteProduct.getDescription(), "");
         if (!brandName.isEmpty()) {
-            return brandName + " build with mobile-ready listing preview.";
+            return brandName + " với cấu hình phù hợp cho nhu cầu đi lại hằng ngày.";
         }
         if (description.length() > 80) {
             return description.substring(0, 80) + "...";
         }
-        return description.isEmpty() ? "Product detail from backend." : description;
+        return description.isEmpty() ? "Thông tin sản phẩm đang được đồng bộ từ máy chủ." : description;
     }
 
     private String buildCoverLabel(String title) {
@@ -120,28 +121,13 @@ public class ProductRemoteRepository {
 
     private String buildBadge(RemoteProductResponse remoteProduct) {
         if (remoteProduct.isVerified()) {
-            return "Verified inspection";
+            return "Đã kiểm định";
         }
-        return formatEnum(remoteProduct.getCondition());
+        return formatValue(remoteProduct.getCondition());
     }
 
-    private String formatEnum(String rawValue) {
-        if (rawValue == null || rawValue.isEmpty()) {
-            return "Unknown";
-        }
-        String normalized = rawValue.toLowerCase().replace('_', ' ');
-        String[] words = normalized.split(" ");
-        StringBuilder builder = new StringBuilder();
-        for (String word : words) {
-            if (word.isEmpty()) {
-                continue;
-            }
-            if (builder.length() > 0) {
-                builder.append(' ');
-            }
-            builder.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
-        }
-        return builder.toString();
+    private String formatValue(String rawValue) {
+        return DisplayLabelFormatter.formatValue(rawValue);
     }
 
     private String fallback(String value, String fallback) {

@@ -23,10 +23,10 @@ public class FakeMarketplaceRepository {
         wishlistProducts = buildWishlistProducts();
         orderPreviews = buildOrders();
         userProfile = new UserProfile(
-                "An Nguyen",
-                "Buyer",
+                "An Nguyễn",
+                "Người mua",
                 "buyer@oldbicycles.vn",
-                "Da Nang",
+                "Đà Nẵng",
                 3,
                 wishlistProducts.size()
         );
@@ -47,6 +47,20 @@ public class FakeMarketplaceRepository {
         return Collections.unmodifiableList(wishlistProducts);
     }
 
+    public void saveWishlistProduct(Product product) {
+        if (product == null || findWishlistProduct(product.getId()) != null) {
+            return;
+        }
+        wishlistProducts.add(product);
+    }
+
+    public void removeWishlistProduct(String productId) {
+        Product existingProduct = findWishlistProduct(productId);
+        if (existingProduct != null) {
+            wishlistProducts.remove(existingProduct);
+        }
+    }
+
     public List<OrderPreview> getOrderPreviews() {
         return Collections.unmodifiableList(orderPreviews);
     }
@@ -61,6 +75,10 @@ public class FakeMarketplaceRepository {
                 return product;
             }
         }
+        return findWishlistProduct(productId);
+    }
+
+    private Product findWishlistProduct(String productId) {
         for (Product product : wishlistProducts) {
             if (product.getId().equals(productId)) {
                 return product;
@@ -74,12 +92,12 @@ public class FakeMarketplaceRepository {
         products.add(new Product(
                 "road-001",
                 "Giant Defy Advanced 2",
-                "Balanced endurance frame with a calm road feel.",
+                "Khung endurance êm, phù hợp cho những buổi đạp xa cuối tuần.",
                 "RD",
-                "Ho Chi Minh City",
-                "Lightly used",
-                "Verified inspection",
-                "A smooth endurance road bike aimed at long weekend rides. The frame keeps the position comfortable while still feeling responsive on climbs and city exits.",
+                "Thành phố Hồ Chí Minh",
+                "Đã qua sử dụng nhẹ",
+                "Đã kiểm định",
+                "Mẫu xe đường trường này phù hợp với người muốn đạp xa nhưng vẫn giữ tư thế thoải mái. Khung xe phản hồi tốt khi lên dốc và vẫn đủ dễ chịu để dùng hằng ngày.",
                 "M / 54 cm",
                 "700C",
                 "Shimano 105",
@@ -91,12 +109,12 @@ public class FakeMarketplaceRepository {
         products.add(new Product(
                 "gravel-002",
                 "Specialized Diverge Elite",
-                "Quick gravel setup for mixed pavement and broken roads.",
+                "Cấu hình gravel linh hoạt cho đi phố lẫn đường xấu nhẹ.",
                 "GV",
-                "Ha Noi",
-                "Very good",
-                "Fresh pick",
-                "A practical gravel bike for riders who need one machine for commute, light touring, and rougher urban roads. The wider tire clearance makes this a flexible daily option.",
+                "Hà Nội",
+                "Rất tốt",
+                "Được quan tâm",
+                "Chiếc gravel này phù hợp với người cần một mẫu xe linh hoạt để đi làm, đi chơi cuối tuần và thỉnh thoảng ra khỏi mặt đường nhựa. Khoảng sáng lốp rộng giúp xe dễ thích nghi hơn.",
                 "L / 56 cm",
                 "700C",
                 "GRX 400",
@@ -108,12 +126,12 @@ public class FakeMarketplaceRepository {
         products.add(new Product(
                 "city-003",
                 "Trek FX 3 Disc",
-                "Fast city hybrid with upright comfort and reliable braking.",
+                "Mẫu hybrid nhanh gọn, tư thế ngồi thoải mái và phanh ổn định.",
                 "CT",
-                "Can Tho",
-                "Good",
-                "Daily rider",
-                "An easy hybrid bike for city movement, bike paths, and fitness rides. The geometry is forgiving and suitable for a rider who wants comfort more than aggressive speed.",
+                "Cần Thơ",
+                "Tốt",
+                "Đi phố hằng ngày",
+                "Đây là lựa chọn dễ tiếp cận cho người cần một chiếc xe đạp đi làm, tập thể dục hoặc di chuyển trong thành phố. Hình học xe thân thiện và ít gây mỏi khi đi lâu.",
                 "M",
                 "700C",
                 "Shimano Deore",
@@ -125,15 +143,15 @@ public class FakeMarketplaceRepository {
         products.add(new Product(
                 "vintage-004",
                 "Peugeot Ventoux Classic",
-                "Vintage steel character with restored commuting charm.",
+                "Khung thép cổ điển đã được làm mới để đi phố nhẹ nhàng.",
                 "VT",
-                "Hue",
-                "Restored",
-                "Collector mood",
-                "A classic steel bicycle refreshed for urban cruising and display value. It is less about racing and more about personality, smooth cruising, and nostalgic presence.",
+                "Huế",
+                "Đã phục dựng",
+                "Phong cách sưu tầm",
+                "Mẫu xe này nổi bật ở chất cổ điển và cảm giác lái êm. Phù hợp với người thích đi dạo trong phố, chụp ảnh hoặc sưu tầm hơn là theo đuổi tốc độ.",
                 "53 cm",
                 "700C",
-                "Retro friction mix",
+                "Bộ số ma sát cổ điển",
                 11800000L,
                 R.color.card_peach,
                 R.color.accent_gold,
@@ -147,12 +165,12 @@ public class FakeMarketplaceRepository {
         products.add(new Product(
                 "road-001",
                 "Giant Defy Advanced 2",
-                "Balanced endurance frame with a calm road feel.",
+                "Khung endurance êm, phù hợp cho những buổi đạp xa cuối tuần.",
                 "RD",
-                "Ho Chi Minh City",
-                "Lightly used",
-                "Saved comparison",
-                "A smooth endurance road bike aimed at long weekend rides. The frame keeps the position comfortable while still feeling responsive on climbs and city exits.",
+                "Thành phố Hồ Chí Minh",
+                "Đã qua sử dụng nhẹ",
+                "Đang cân nhắc",
+                "Mẫu xe này đang nằm trong danh sách cần so sánh thêm về giá và tình trạng thực tế trước khi gửi yêu cầu mua.",
                 "M / 54 cm",
                 "700C",
                 "Shimano 105",
@@ -164,12 +182,12 @@ public class FakeMarketplaceRepository {
         products.add(new Product(
                 "city-003",
                 "Trek FX 3 Disc",
-                "Fast city hybrid with upright comfort and reliable braking.",
+                "Mẫu hybrid nhanh gọn, tư thế ngồi thoải mái và phanh ổn định.",
                 "CT",
-                "Can Tho",
-                "Good",
-                "Saved commute option",
-                "An easy hybrid bike for city movement, bike paths, and fitness rides. The geometry is forgiving and suitable for a rider who wants comfort more than aggressive speed.",
+                "Cần Thơ",
+                "Tốt",
+                "Phù hợp đi làm",
+                "Đây là mẫu xe được lưu lại để so sánh với những lựa chọn đi phố khác về mức giá và khả năng sử dụng hằng ngày.",
                 "M",
                 "700C",
                 "Shimano Deore",
@@ -185,27 +203,48 @@ public class FakeMarketplaceRepository {
         List<OrderPreview> orders = new ArrayList<>();
         orders.add(new OrderPreview(
                 "ORD-2403",
-                "Deposit confirmed for Giant Defy Advanced 2",
-                "Seller accepted the order and the deposit is waiting for delivery confirmation.",
+                "Đơn mua Giant Defy Advanced 2 đã được chấp nhận",
+                "Người bán đã đồng ý đơn và đang chờ bước xác nhận giao xe tiếp theo.",
                 4700000L,
-                "Deposit confirmed",
-                R.color.primary_soft
+                "Đã đặt cọc",
+                R.color.primary_soft,
+                "Đang giữ tiền",
+                "Chuyển khoản",
+                "19/03/2026 09:10",
+                "20/03/2026 09:10",
+                "Người mua: An Nguyễn • Người bán: Minh Trần",
+                "Khoản thanh toán trước đã được ghi nhận. Đơn đang ở giai đoạn chờ giao xe và xác nhận hoàn tất.",
+                false
         ));
         orders.add(new OrderPreview(
                 "ORD-2398",
-                "Specialized Diverge Elite inspection review",
-                "Inspection request is still being reviewed before the next payment step.",
+                "Đơn Specialized Diverge Elite đang chờ người bán phản hồi",
+                "Yêu cầu mua đã được gửi và đang chờ người bán chấp nhận bước thanh toán tiếp theo.",
                 5780000L,
-                "Inspection pending",
-                R.color.card_sand
+                "Đang chờ",
+                R.color.card_sand,
+                "Chờ thanh toán",
+                "Tiền mặt",
+                "18/03/2026 15:20",
+                "19/03/2026 15:20",
+                "Người mua: An Nguyễn • Người bán: Huy Phạm",
+                "Đơn này vẫn cần người bán xác nhận trước khi quá trình thanh toán hoặc giao nhận có thể tiếp tục.",
+                false
         ));
         orders.add(new OrderPreview(
                 "ORD-2387",
-                "Trek FX 3 Disc delivery completed",
-                "The bike was marked as received and this order is ready for post-purchase review flow.",
+                "Đơn Trek FX 3 Disc đã hoàn tất giao nhận",
+                "Người mua đã xác nhận nhận xe thành công và đơn đã khép lại.",
                 14500000L,
-                "Completed",
-                R.color.card_mint
+                "Hoàn tất",
+                R.color.card_mint,
+                "Đã giải ngân",
+                "Thanh toán online",
+                "16/03/2026 11:05",
+                "Đã hoàn tất",
+                "Người mua: An Nguyễn • Người bán: Quang Hồ",
+                "Đây là một đơn đã hoàn tất, phù hợp để xem lại các mốc thanh toán và tình trạng giao nhận.",
+                false
         ));
         return orders;
     }

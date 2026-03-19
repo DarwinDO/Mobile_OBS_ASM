@@ -14,8 +14,10 @@ import com.example.mobile_obs_asm.data.ProductRemoteRepository;
 import com.example.mobile_obs_asm.data.RepositoryCallback;
 import com.example.mobile_obs_asm.data.SessionManager;
 import com.example.mobile_obs_asm.data.WishlistRemoteRepository;
+import com.example.mobile_obs_asm.data.FakeMarketplaceRepository;
 import com.example.mobile_obs_asm.model.Product;
 import com.example.mobile_obs_asm.util.PriceFormatter;
+import com.example.mobile_obs_asm.util.SystemBarInsetsHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -38,6 +40,7 @@ public class ProductDetailActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_detail);
+        SystemBarInsetsHelper.applyToRoot(findViewById(R.id.productDetailRoot));
 
         MaterialToolbar toolbar = findViewById(R.id.toolbarDetail);
         toolbar.setNavigationOnClickListener(view -> finish());
@@ -52,6 +55,7 @@ public class ProductDetailActivity extends AppCompatActivity {
 
         bindProduct(currentProduct);
         setupActions();
+        bindProduct(currentProduct);
         refreshRemoteDetailIfNeeded(currentProduct);
     }
 
@@ -89,6 +93,11 @@ public class ProductDetailActivity extends AppCompatActivity {
         textTrust.setText(product.isRemoteSource()
                 ? getString(R.string.detail_trust_live)
                 : getString(R.string.detail_trust_preview));
+
+        if (buttonSavePreview != null && buttonOrderPreview != null) {
+            buttonSavePreview.setText(product.isRemoteSource() ? R.string.detail_save_action : R.string.detail_save_preview_action);
+            buttonOrderPreview.setText(product.isRemoteSource() ? R.string.detail_order_action : R.string.detail_order_preview_action);
+        }
     }
 
     private void setupActions() {
@@ -105,6 +114,7 @@ public class ProductDetailActivity extends AppCompatActivity {
         }
 
         if (!currentProduct.isRemoteSource()) {
+            FakeMarketplaceRepository.getInstance().saveWishlistProduct(currentProduct);
             openMainSection(R.id.navigation_wishlist, R.string.detail_saved_toast);
             return;
         }

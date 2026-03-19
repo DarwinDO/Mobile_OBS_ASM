@@ -8,6 +8,9 @@ import retrofit2.http.POST;
 
 public interface AuthApiService {
 
+    @POST("api/auth/register")
+    Call<ApiEnvelope<String>> register(@Body RegisterRequestBody requestBody);
+
     @POST("api/auth/login")
     Call<ApiEnvelope<RemoteAuthResponse>> login(@Body LoginRequestBody requestBody);
 }

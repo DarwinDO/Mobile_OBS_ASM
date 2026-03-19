@@ -96,10 +96,10 @@ public class SessionManager {
         String lastName = sharedPreferences.getString(KEY_LAST_NAME, "");
         String name = (firstName + " " + lastName).trim();
         if (name.isEmpty()) {
-            name = "Backend User";
+            name = "Người dùng";
         }
 
-        String role = sharedPreferences.getString(KEY_ROLE, "USER");
+        String role = sharedPreferences.getString(KEY_ROLE, "buyer");
         String email = sharedPreferences.getString(KEY_EMAIL, "");
         String address = sharedPreferences.getString(KEY_ADDRESS, "");
         if (address.isEmpty()) {
@@ -115,9 +115,25 @@ public class SessionManager {
 
     private String normalizeRole(String rawRole) {
         if (rawRole == null || rawRole.isEmpty()) {
-            return "User";
+            return "Người dùng";
         }
+
         String lower = rawRole.toLowerCase();
+        if ("buyer".equals(lower)) {
+            return "Người mua";
+        }
+        if ("seller".equals(lower)) {
+            return "Người bán";
+        }
+        if ("admin".equals(lower)) {
+            return "Quản trị viên";
+        }
+        if ("inspector".equals(lower)) {
+            return "Kiểm định viên";
+        }
+        if ("guest".equals(lower)) {
+            return "Khách";
+        }
         return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
     }
 }

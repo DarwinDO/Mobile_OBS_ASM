@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/productDetailRoot"
+    android:id="@+id/orderDetailRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/screen_background">
 
     <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbarDetail"
+        android:id="@+id/toolbarOrderDetail"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -20,14 +20,13 @@
         app:navigationIcon="@drawable/ic_arrow_back_24" />
 
     <androidx.core.widget.NestedScrollView
-        android:id="@+id/scrollDetail"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintBottom_toTopOf="@id/layoutDetailActions"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbarDetail">
+        app:layout_constraintTop_toBottomOf="@id/toolbarOrderDetail">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -39,7 +38,7 @@
             android:paddingBottom="24dp">
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardDetailHero"
+                android:id="@+id/cardOrderDetailHero"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="30dp"
@@ -52,7 +51,7 @@
                     android:padding="22dp">
 
                     <TextView
-                        android:id="@+id/textDetailBadge"
+                        android:id="@+id/textOrderDetailStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_pill_soft"
@@ -65,56 +64,30 @@
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/textDetailTitle"
+                        android:id="@+id/textOrderDetailTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:textColor="@color/text_primary"
-                        android:textSize="28sp"
+                        android:textSize="26sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/textDetailTagline"
+                        android:id="@+id/textOrderDetailAmount"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:id="@+id/textDetailPrice"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="18dp"
+                        android:layout_marginTop="16dp"
                         android:textColor="@color/primary_deep"
                         android:textSize="24sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/textDetailLocation"
+                        android:id="@+id/textOrderDetailTimeline"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardDetailCover"
-                        android:layout_width="match_parent"
-                        android:layout_height="160dp"
-                        android:layout_marginTop="18dp"
-                        app:cardCornerRadius="24dp"
-                        app:strokeWidth="0dp">
-
-                        <TextView
-                            android:id="@+id/textDetailCoverLabel"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:textColor="@color/text_primary"
-                            android:textSize="32sp"
-                            android:textStyle="bold" />
-                    </com.google.android.material.card.MaterialCardView>
+                        android:layout_marginTop="10dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -136,13 +109,13 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/detail_specs_title"
+                        android:text="@string/order_detail_payment_title"
                         android:textColor="@color/text_primary"
                         android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/textDetailCondition"
+                        android:id="@+id/textOrderDetailFunding"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
@@ -150,7 +123,7 @@
                         android:textSize="15sp" />
 
                     <TextView
-                        android:id="@+id/textDetailFrameSize"
+                        android:id="@+id/textOrderDetailPaymentMethod"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -158,7 +131,7 @@
                         android:textSize="15sp" />
 
                     <TextView
-                        android:id="@+id/textDetailWheelSize"
+                        android:id="@+id/textOrderDetailCreatedAt"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -166,7 +139,7 @@
                         android:textSize="15sp" />
 
                     <TextView
-                        android:id="@+id/textDetailGroupset"
+                        android:id="@+id/textOrderDetailDeadline"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -193,88 +166,29 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/detail_about_title"
+                        android:text="@string/order_detail_parties_title"
                         android:textColor="@color/text_primary"
                         android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/textDetailDescription"
+                        android:id="@+id/textOrderDetailParties"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
                         android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="26dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/detail_trust_title"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/textDetailTrust"
+                        android:id="@+id/textOrderDetailSummary"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="12dp"
                         android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
-    <LinearLayout
-        android:id="@+id/layoutDetailActions"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_bottom_action_bar"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingTop="14dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="20dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSavePreview"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:layout_weight="1"
-            android:text="@string/detail_save_action"
-            app:strokeColor="@color/divider" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonOrderPreview"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/detail_order_action"
-            app:backgroundTint="@color/accent_orange" />
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
