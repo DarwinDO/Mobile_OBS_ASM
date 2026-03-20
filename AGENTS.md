@@ -82,5 +82,8 @@ This file is the Codex-facing adapter for the Android mobile repository at `e:\O
 - Favor simple MVP architecture over abstract layers that the project does not need yet.
 - Use Java plus XML Views for new screens unless the user explicitly requests another UI approach.
 - Treat a mobile feature as `Done` only when UI flow, API integration, basic error handling, and at least one verification step are aligned.
+- Whenever an accepted mobile or cross-domain change modifies user flows, feature scope, business rules, role visibility, status semantics, or API behavior, update the relevant SRS Markdown in the same slice of work. Use the shared root SRS `../SRS-Old-Bicycles-Marketplace (1).md` unless the task explicitly uses another synchronized project copy.
+- If the accepted change introduces or depends on new backend tables, payout records, evidence records, or other persisted schema concepts, make sure the SRS database section and feature descriptions are updated clearly.
+- Do not mark a mobile slice as fully done if the implemented behavior changed but the corresponding SRS Markdown was left outdated.
 - Do not claim a screen is complete if it only has static XML with no realistic data path.
 - Do not store tokens in plain `SharedPreferences`; use encrypted storage when authentication is implemented.
