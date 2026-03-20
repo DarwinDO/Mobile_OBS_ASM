@@ -104,6 +104,22 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="@string/home_search_hint"
+                app:endIconMode="clear_text">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputHomeSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupHomeFilters"
                 android:layout_width="match_parent"
@@ -142,6 +158,14 @@
                     android:layout_height="wrap_content"
                     android:text="@string/home_chip_vintage" />
             </com.google.android.material.chip.ChipGroup>
+
+            <TextView
+                android:id="@+id/textHomeResultsSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
 
             <TextView
                 android:layout_width="match_parent"

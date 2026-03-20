@@ -6,6 +6,7 @@ import com.example.mobile_obs_asm.network.ApiEnvelope;
 import com.example.mobile_obs_asm.network.RetrofitClient;
 import com.example.mobile_obs_asm.network.auth.AuthApiService;
 import com.example.mobile_obs_asm.network.auth.LoginRequestBody;
+import com.example.mobile_obs_asm.network.auth.ProfileUpdateRequestBody;
 import com.example.mobile_obs_asm.network.auth.RegisterRequestBody;
 import com.example.mobile_obs_asm.network.auth.RemoteAuthResponse;
 import com.example.mobile_obs_asm.util.ApiErrorMessageExtractor;
@@ -82,5 +83,47 @@ public class AuthRepository {
                         );
                     }
                 });
+    }
+
+    public void updateProfile(
+            String firstName,
+            String lastName,
+            String phone,
+            String defaultAddress,
+            RepositoryCallback<RemoteAuthResponse.RemoteUserInfo> callback
+    ) {
+        authApiService.updateProfile(new ProfileUpdateRequestBody(
+                firstName,
+                lastName,
+                phone,
+                null,
+                defaultAddress
+        )).enqueue(new Callback<ApiEnvelope<RemoteAuthResponse.RemoteUserInfo>>() {
+            @Override
+            public void onResponse(
+                    Call<ApiEnvelope<RemoteAuthResponse.RemoteUserInfo>> call,
+                    Response<ApiEnvelope<RemoteAuthResponse.RemoteUserInfo>> response
+            ) {
+                if (!response.isSuccessful() || response.body() == null || response.body().getResult() == null) {
+                    callback.onError(
+                            ApiErrorMessageExtractor.extract(response, "Không thể cập nhật hồ sơ lúc này."),
+                            null
+                    );
+                    return;
+                }
+
+                RemoteAuthResponse.RemoteUserInfo userInfo = response.body().getResult();
+                sessionManager.updateStoredUser(userInfo);
+                callback.onSuccess(userInfo);
+            }
+
+            @Override
+            public void onFailure(Call<ApiEnvelope<RemoteAuthResponse.RemoteUserInfo>> call, Throwable throwable) {
+                callback.onError(
+                        "Không thể kết nối để cập nhật hồ sơ. Vui lòng thử lại sau ít phút.",
+                        throwable
+                );
+            }
+        });
     }
 }

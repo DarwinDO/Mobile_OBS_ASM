@@ -1,9 +1,12 @@
 package com.example.mobile_obs_asm.ui.home;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,7 +24,9 @@ import com.example.mobile_obs_asm.model.Product;
 import com.example.mobile_obs_asm.ui.common.SectionStateController;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.textfield.TextInputEditText;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -52,6 +57,9 @@ public class HomeFragment extends Fragment {
     private ChipGroup chipGroup;
     private SwipeRefreshLayout swipeRefreshLayout;
     private boolean allowResumeRefresh;
+    private TextInputEditText inputSearch;
+    private TextView textResultsSummary;
+    private String searchQuery = "";
 
     @Nullable
     @Override
@@ -70,6 +78,8 @@ public class HomeFragment extends Fragment {
         stateController = new SectionStateController(view, R.id.layoutHomeState);
         chipGroup = view.findViewById(R.id.chipGroupHomeFilters);
         swipeRefreshLayout = view.findViewById(R.id.swipeHomeRefresh);
+        inputSearch = view.findViewById(R.id.inputHomeSearch);
+        textResultsSummary = view.findViewById(R.id.textHomeResultsSummary);
         MaterialButton heroButton = view.findViewById(R.id.buttonHeroExplore);
         adapter = new ProductAdapter(sourceProducts, this::openProductDetail);
 
@@ -86,6 +96,7 @@ public class HomeFragment extends Fragment {
         });
 
         setupFilters();
+        setupSearch();
         renderProductFeed();
         loadProducts();
     }
@@ -116,6 +127,24 @@ public class HomeFragment extends Fragment {
                 }
             }
             renderProductFeed();
+        });
+    }
+
+    private void setupSearch() {
+        inputSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchQuery = s == null ? "" : s.toString().trim();
+                renderProductFeed();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
         });
     }
 
@@ -160,6 +189,7 @@ public class HomeFragment extends Fragment {
     private void renderProductFeed() {
         List<Product> filteredProducts = filterProducts(sourceProducts);
         adapter.replaceProducts(filteredProducts);
+        updateResultsSummary(filteredProducts.size(), sourceProducts.size());
 
         if (filteredProducts.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
@@ -167,11 +197,7 @@ public class HomeFragment extends Fragment {
                     getString(R.string.state_home_filter_empty_title),
                     getString(R.string.state_home_filter_empty_message),
                     getString(R.string.state_action_clear_filter),
-                    actionView -> {
-                        chipGroup.clearCheck();
-                        selectedFilter = null;
-                        renderProductFeed();
-                    }
+                    actionView -> clearFilters()
             );
             return;
         }
@@ -201,13 +227,9 @@ public class HomeFragment extends Fragment {
     }
 
     private List<Product> filterProducts(List<Product> products) {
-        if (selectedFilter == null) {
-            return new ArrayList<>(products);
-        }
-
         List<Product> filteredProducts = new ArrayList<>();
         for (Product product : products) {
-            if (matchesFilter(product, selectedFilter)) {
+            if (matchesFilter(product, selectedFilter) && matchesSearch(product)) {
                 filteredProducts.add(product);
             }
         }
@@ -215,25 +237,45 @@ public class HomeFragment extends Fragment {
     }
 
     private boolean matchesFilter(Product product, ProductFilter filter) {
+        if (filter == null) {
+            return true;
+        }
+
         String searchSpace = (
                 safe(product.getId()) + " "
                         + safe(product.getTitle()) + " "
                         + safe(product.getTagline()) + " "
                         + safe(product.getDescription())
         ).toLowerCase(Locale.ROOT);
+        String normalizedSearchSpace = normalizeForSearch(searchSpace);
 
         switch (filter) {
             case ROAD:
-                return containsAny(searchSpace, "road", "đường trường", "endurance", "race");
+                return containsAny(normalizedSearchSpace, "road", "duong truong", "endurance", "race", "defy");
             case GRAVEL:
-                return containsAny(searchSpace, "gravel", "địa hình", "diverge");
+                return containsAny(normalizedSearchSpace, "gravel", "dia hinh", "diverge");
             case CITY:
-                return containsAny(searchSpace, "city", "đi phố", "hybrid", "commute", "trek fx");
+                return containsAny(normalizedSearchSpace, "city", "di pho", "hybrid", "commute", "trek fx", "fx");
             case VINTAGE:
-                return containsAny(searchSpace, "vintage", "classic", "cổ điển", "peugeot");
+                return containsAny(normalizedSearchSpace, "vintage", "classic", "co dien", "peugeot");
             default:
                 return true;
         }
+    }
+
+    private boolean matchesSearch(Product product) {
+        if (searchQuery.isEmpty()) {
+            return true;
+        }
+
+        String searchSpace = (
+                safe(product.getTitle()) + " "
+                        + safe(product.getTagline()) + " "
+                        + safe(product.getDescription()) + " "
+                        + safe(product.getLocation()) + " "
+                        + safe(product.getCondition())
+        ).toLowerCase(Locale.ROOT);
+        return normalizeForSearch(searchSpace).contains(normalizeForSearch(searchQuery));
     }
 
     private boolean containsAny(String searchSpace, String... keywords) {
@@ -245,8 +287,29 @@ public class HomeFragment extends Fragment {
         return false;
     }
 
+    private void clearFilters() {
+        chipGroup.clearCheck();
+        selectedFilter = null;
+        inputSearch.setText("");
+        searchQuery = "";
+        renderProductFeed();
+    }
+
+    private void updateResultsSummary(int filteredCount, int totalCount) {
+        if (selectedFilter == null && searchQuery.isEmpty()) {
+            textResultsSummary.setText(getString(R.string.home_results_summary_all, totalCount));
+            return;
+        }
+        textResultsSummary.setText(getString(R.string.home_results_summary_filtered, filteredCount, totalCount));
+    }
+
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private String normalizeForSearch(String value) {
+        String normalized = Normalizer.normalize(safe(value), Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "").toLowerCase(Locale.ROOT);
     }
 
     private void openProductDetail(Product product) {

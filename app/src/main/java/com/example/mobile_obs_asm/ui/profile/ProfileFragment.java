@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.mobile_obs_asm.EditProfileActivity;
 import com.example.mobile_obs_asm.LoginActivity;
 import com.example.mobile_obs_asm.R;
 import com.example.mobile_obs_asm.RegisterActivity;
@@ -22,16 +23,30 @@ import com.google.android.material.button.MaterialButton;
 
 public class ProfileFragment extends Fragment {
 
+    private View rootView;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_profile, container, false);
+        rootView = inflater.inflate(R.layout.fragment_profile, container, false);
+        return rootView;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        bindProfile(view);
+    }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (rootView != null) {
+            bindProfile(rootView);
+        }
+    }
+
+    private void bindProfile(@NonNull View view) {
         SessionManager sessionManager = SessionManager.getInstance(requireContext());
         boolean hasSession = sessionManager.hasActiveSession();
         boolean sellerSession = sessionManager.isSellerSession();
@@ -53,6 +68,7 @@ public class ProfileFragment extends Fragment {
         MaterialButton buttonPrimary = view.findViewById(R.id.buttonProfilePrimaryAction);
         MaterialButton buttonSecondary = view.findViewById(R.id.buttonProfileSecondaryAction);
         MaterialButton buttonTertiary = view.findViewById(R.id.buttonProfileTertiaryAction);
+        MaterialButton buttonQuaternary = view.findViewById(R.id.buttonProfileQuaternaryAction);
 
         textProfileBadge.setText(hasSession ? R.string.profile_badge : R.string.profile_guest_badge);
         textProfileAvatar.setText(userProfile.getInitials());
@@ -67,7 +83,7 @@ public class ProfileFragment extends Fragment {
         textTrustSaved.setText(getString(R.string.trust_panel_saved) + ": " + userProfile.getSavedListings());
         textTrustRole.setText(getString(R.string.trust_panel_role) + ": " + userProfile.getRole());
 
-        bindActions(hasSession, sellerSession, buttonPrimary, buttonSecondary, buttonTertiary);
+        bindActions(hasSession, sellerSession, buttonPrimary, buttonSecondary, buttonTertiary, buttonQuaternary);
     }
 
     private void bindActions(
@@ -75,17 +91,22 @@ public class ProfileFragment extends Fragment {
             boolean sellerSession,
             MaterialButton buttonPrimary,
             MaterialButton buttonSecondary,
-            MaterialButton buttonTertiary
+            MaterialButton buttonTertiary,
+            MaterialButton buttonQuaternary
     ) {
         if (hasSession) {
-            buttonPrimary.setText(sellerSession ? R.string.profile_action_my_listings : R.string.profile_action_orders);
-            buttonPrimary.setOnClickListener(v -> navigateToSection(sellerSession ? R.id.navigation_wishlist : R.id.navigation_orders));
+            buttonPrimary.setText(R.string.profile_action_edit_profile);
+            buttonPrimary.setOnClickListener(v -> startActivity(EditProfileActivity.createIntent(requireContext())));
 
-            buttonSecondary.setText(sellerSession ? R.string.profile_action_sales_orders : R.string.profile_action_wishlist);
-            buttonSecondary.setOnClickListener(v -> navigateToSection(sellerSession ? R.id.navigation_orders : R.id.navigation_wishlist));
+            buttonSecondary.setText(sellerSession ? R.string.profile_action_my_listings : R.string.profile_action_orders);
+            buttonSecondary.setOnClickListener(v -> navigateToSection(sellerSession ? R.id.navigation_wishlist : R.id.navigation_orders));
 
-            buttonTertiary.setText(R.string.profile_sign_out);
-            buttonTertiary.setOnClickListener(v -> {
+            buttonTertiary.setText(sellerSession ? R.string.profile_action_sales_orders : R.string.profile_action_wishlist);
+            buttonTertiary.setOnClickListener(v -> navigateToSection(sellerSession ? R.id.navigation_orders : R.id.navigation_wishlist));
+
+            buttonQuaternary.setVisibility(View.VISIBLE);
+            buttonQuaternary.setText(R.string.profile_sign_out);
+            buttonQuaternary.setOnClickListener(v -> {
                 SessionManager.getInstance(requireContext()).clearSession();
                 Toast.makeText(requireContext(), R.string.profile_sign_out_toast, Toast.LENGTH_SHORT).show();
                 startActivity(LoginActivity.createIntent(requireContext(), null));
@@ -105,6 +126,7 @@ public class ProfileFragment extends Fragment {
 
         buttonTertiary.setText(R.string.profile_action_explore);
         buttonTertiary.setOnClickListener(v -> navigateToSection(R.id.navigation_home));
+        buttonQuaternary.setVisibility(View.GONE);
     }
 
     private void navigateToSection(int destinationId) {

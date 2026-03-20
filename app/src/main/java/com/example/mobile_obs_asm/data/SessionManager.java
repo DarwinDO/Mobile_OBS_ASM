@@ -23,6 +23,8 @@ public class SessionManager {
     private static final String KEY_EMAIL = "email";
     private static final String KEY_FIRST_NAME = "first_name";
     private static final String KEY_LAST_NAME = "last_name";
+    private static final String KEY_PHONE = "phone";
+    private static final String KEY_AVATAR_URL = "avatar_url";
     private static final String KEY_ROLE = "role";
     private static final String KEY_ADDRESS = "address";
 
@@ -68,12 +70,24 @@ public class SessionManager {
         sharedPreferences.edit()
                 .putString(KEY_ACCESS_TOKEN, safe(authResponse.getAccessToken()))
                 .putString(KEY_REFRESH_TOKEN, safe(authResponse.getRefreshToken()))
-                .putString(KEY_USER_ID, safe(authResponse.getUser().getId()))
-                .putString(KEY_EMAIL, safe(authResponse.getUser().getEmail()))
-                .putString(KEY_FIRST_NAME, safe(authResponse.getUser().getFirstName()))
-                .putString(KEY_LAST_NAME, safe(authResponse.getUser().getLastName()))
-                .putString(KEY_ROLE, safe(authResponse.getUser().getRole()))
-                .putString(KEY_ADDRESS, safe(authResponse.getUser().getDefaultAddress()))
+                .commit();
+        updateStoredUser(authResponse.getUser());
+    }
+
+    public void updateStoredUser(RemoteAuthResponse.RemoteUserInfo userInfo) {
+        if (userInfo == null) {
+            return;
+        }
+
+        sharedPreferences.edit()
+                .putString(KEY_USER_ID, safe(userInfo.getId()))
+                .putString(KEY_EMAIL, safe(userInfo.getEmail()))
+                .putString(KEY_FIRST_NAME, safe(userInfo.getFirstName()))
+                .putString(KEY_LAST_NAME, safe(userInfo.getLastName()))
+                .putString(KEY_PHONE, safe(userInfo.getPhone()))
+                .putString(KEY_AVATAR_URL, safe(userInfo.getAvatarUrl()))
+                .putString(KEY_ROLE, safe(userInfo.getRole()))
+                .putString(KEY_ADDRESS, safe(userInfo.getDefaultAddress()))
                 .commit();
     }
 
@@ -92,6 +106,26 @@ public class SessionManager {
 
     public String getCurrentUserId() {
         return sharedPreferences.getString(KEY_USER_ID, "");
+    }
+
+    public String getStoredEmail() {
+        return safe(sharedPreferences.getString(KEY_EMAIL, ""));
+    }
+
+    public String getStoredFirstName() {
+        return safe(sharedPreferences.getString(KEY_FIRST_NAME, ""));
+    }
+
+    public String getStoredLastName() {
+        return safe(sharedPreferences.getString(KEY_LAST_NAME, ""));
+    }
+
+    public String getStoredPhone() {
+        return safe(sharedPreferences.getString(KEY_PHONE, ""));
+    }
+
+    public String getStoredAddress() {
+        return safe(sharedPreferences.getString(KEY_ADDRESS, ""));
     }
 
     public boolean isSellerSession() {
