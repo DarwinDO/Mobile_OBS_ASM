@@ -12,7 +12,9 @@ public class SellerListing {
     private final String status;
     private final String statusLabel;
     private final String coverLabel;
+    private final String imageUrl;
     private final @ColorRes int coverColorRes;
+    private final boolean lockedForTransaction;
 
     public SellerListing(
             String id,
@@ -23,7 +25,36 @@ public class SellerListing {
             String status,
             String statusLabel,
             String coverLabel,
-            @ColorRes int coverColorRes
+            @ColorRes int coverColorRes,
+            boolean lockedForTransaction
+    ) {
+        this(
+                id,
+                title,
+                summary,
+                meta,
+                price,
+                status,
+                statusLabel,
+                coverLabel,
+                null,
+                coverColorRes,
+                lockedForTransaction
+        );
+    }
+
+    public SellerListing(
+            String id,
+            String title,
+            String summary,
+            String meta,
+            long price,
+            String status,
+            String statusLabel,
+            String coverLabel,
+            String imageUrl,
+            @ColorRes int coverColorRes,
+            boolean lockedForTransaction
     ) {
         this.id = id;
         this.title = title;
@@ -33,7 +64,9 @@ public class SellerListing {
         this.status = status;
         this.statusLabel = statusLabel;
         this.coverLabel = coverLabel;
+        this.imageUrl = imageUrl;
         this.coverColorRes = coverColorRes;
+        this.lockedForTransaction = lockedForTransaction;
     }
 
     public String getId() {
@@ -68,8 +101,16 @@ public class SellerListing {
         return coverLabel;
     }
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
     public int getCoverColorRes() {
         return coverColorRes;
+    }
+
+    public boolean isLockedForTransaction() {
+        return lockedForTransaction;
     }
 
     public boolean isHidden() {

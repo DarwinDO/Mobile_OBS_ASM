@@ -214,3 +214,115 @@ Màn đó nên có đủ:
 - hành động tiếp theo hợp lý cho người dùng
 
 Đó là lý do vì sao lần cập nhật này quan trọng: nó biến các tab từ “màn demo tĩnh” thành các màn có hành vi thực tế hơn rất nhiều.
+
+## 12. Vì sao nút yêu thích trong màn chi tiết có thể hiển thị sai?
+
+Đây là một lỗi rất hay gặp trong app mobile.
+
+Người dùng đã bấm lưu vào yêu thích thành công, nhưng khi mở lại `ProductDetailActivity`, nút vẫn hiện `Lưu yêu thích`.
+
+### Nguyên nhân
+
+Lý do là màn chi tiết trước đó chưa có một nơi lưu lại trạng thái:
+
+- sản phẩm nào đã nằm trong wishlist
+- sản phẩm nào vừa bị xoá khỏi wishlist
+
+App chỉ làm được một nửa:
+
+1. Gọi `POST /api/wishlist/{productId}` để lưu.
+2. Hiện toast báo thành công.
+
+Nhưng app chưa làm nửa còn lại:
+
+3. Ghi nhớ ID sản phẩm đã lưu.
+4. Khi mở lại màn chi tiết, đọc lại trạng thái đó để đổi text nút.
+
+Vì thiếu bước 3 và bước 4, nút luôn quay về trạng thái mặc định.
+
+## 13. Cách sửa trong project này
+
+Project đã thêm:
+
+- `app/src/main/java/com/example/mobile_obs_asm/data/WishlistStateStore.java`
+
+Class này là một local store rất nhỏ để lưu danh sách `productId` đã nằm trong wishlist của user hiện tại.
+
+Nó dùng `SharedPreferences` để:
+
+- đánh dấu một sản phẩm vừa được lưu
+- bỏ đánh dấu khi sản phẩm bị xoá
+- thay toàn bộ danh sách sau khi fetch wishlist từ backend
+
+## 14. Luồng runtime mới của nút yêu thích
+
+### Trường hợp lưu sản phẩm
+
+1. Người dùng mở `ProductDetailActivity`.
+2. Activity gọi `resolveWishlistSaved(...)`.
+3. Nếu user đã đăng nhập, activity đọc `WishlistStateStore`.
+4. Nếu `productId` chưa có trong store, nút hiện `Lưu yêu thích`.
+5. Người dùng bấm nút.
+6. `WishlistRemoteRepository.addProduct(...)` gọi backend.
+7. Nếu thành công, repository đánh dấu `productId` là đã lưu trong `WishlistStateStore`.
+8. `ProductDetailActivity` cập nhật lại nút thành `Bỏ khỏi yêu thích`.
+
+### Trường hợp xoá khỏi wishlist
+
+1. Người dùng mở lại màn chi tiết của cùng sản phẩm.
+2. Activity đọc `WishlistStateStore` và biết sản phẩm này đã lưu.
+3. Nút hiện `Bỏ khỏi yêu thích`.
+4. Người dùng bấm nút.
+5. `WishlistRemoteRepository.removeProduct(...)` gọi backend.
+6. Nếu thành công, repository xoá `productId` khỏi `WishlistStateStore`.
+7. Activity đổi nút trở lại `Lưu yêu thích`.
+
+## 15. Sync giữa tab Wishlist và màn chi tiết
+
+Ngoài thao tác add/remove trực tiếp, repository còn sync local state khi load danh sách wishlist:
+
+- `WishlistRemoteRepository.fetchWishlist(...)`
+
+Khi backend trả về toàn bộ wishlist, repository sẽ:
+
+1. map response sang `Product`
+2. lấy tất cả `productId`
+3. ghi đè lại local store theo danh sách mới nhất
+
+Điều này giúp app đỡ bị lệch trạng thái giữa:
+
+- tab `Wishlist`
+- màn `ProductDetailActivity`
+- dữ liệu local vừa thao tác
+
+## 16. Liên hệ với đăng xuất
+
+Khi người dùng đăng xuất, app cũng cần xoá local state của wishlist.
+
+Nếu không, user sau có thể thấy nhầm trạng thái yêu thích của user trước trên cùng thiết bị.
+
+Vì vậy `SessionManager.clearSession()` cũng đã được nối để xoá phần wishlist state của user hiện tại trước khi clear session.
+
+## 17. Những file nên đọc cho phần bug này
+
+- `app/src/main/java/com/example/mobile_obs_asm/ProductDetailActivity.java`
+- `app/src/main/java/com/example/mobile_obs_asm/data/WishlistRemoteRepository.java`
+- `app/src/main/java/com/example/mobile_obs_asm/data/WishlistStateStore.java`
+- `app/src/main/java/com/example/mobile_obs_asm/data/SessionManager.java`
+- `app/src/main/java/com/example/mobile_obs_asm/data/FakeMarketplaceRepository.java`
+
+## 18. Bài học rút ra
+
+Trong mobile app, một hành động thành công trên backend chưa đủ để UI tự đúng.
+
+Ta còn phải nghĩ đến:
+
+- local state
+- thời điểm đọc lại state
+- cách các màn hình khác nhau dùng chung state đó
+
+Đây là khác biệt rất quan trọng giữa:
+
+- `gọi API thành công`
+- và
+- `trải nghiệm người dùng thật sự đúng`

@@ -25,14 +25,28 @@
             app:cardCornerRadius="22dp"
             app:strokeWidth="0dp">
 
-            <TextView
-                android:id="@+id/textProductCoverLabel"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:textColor="@color/text_primary"
-                android:textSize="22sp"
-                android:textStyle="bold" />
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:id="@+id/imageProductCover"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/textProductCoverLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:textColor="@color/text_primary"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout

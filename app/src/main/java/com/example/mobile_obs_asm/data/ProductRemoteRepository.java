@@ -10,6 +10,7 @@ import com.example.mobile_obs_asm.network.SpringPageResponse;
 import com.example.mobile_obs_asm.network.product.ProductApiService;
 import com.example.mobile_obs_asm.network.product.RemoteProductResponse;
 import com.example.mobile_obs_asm.util.DisplayLabelFormatter;
+import com.example.mobile_obs_asm.util.ProductImageUrlResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,6 +83,7 @@ public class ProductRemoteRepository {
                 fallback(remoteProduct.getTitle(), "Xe đang cập nhật tên"),
                 buildTagline(remoteProduct),
                 buildCoverLabel(remoteProduct.getTitle()),
+                ProductImageUrlResolver.resolvePrimaryImageUrl(remoteProduct),
                 fallback(remoteProduct.getProvince(), "Đang cập nhật khu vực"),
                 formatValue(remoteProduct.getCondition()),
                 buildBadge(remoteProduct),

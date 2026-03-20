@@ -1,5 +1,7 @@
 package com.example.mobile_obs_asm;
 
+import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
@@ -8,7 +10,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.mobile_obs_asm.data.ReferenceDataRemoteRepository;
 import com.example.mobile_obs_asm.data.RepositoryCallback;
@@ -18,6 +19,7 @@ import com.example.mobile_obs_asm.model.CreateListingDraft;
 import com.example.mobile_obs_asm.model.CreateListingFormOptions;
 import com.example.mobile_obs_asm.model.ReferenceOption;
 import com.example.mobile_obs_asm.model.SellerListing;
+import com.example.mobile_obs_asm.model.SellerListingEditorData;
 import com.example.mobile_obs_asm.ui.common.SectionStateController;
 import com.example.mobile_obs_asm.util.SystemBarInsetsHelper;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -30,7 +32,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CreateListingActivity extends AppCompatActivity {
+public class CreateListingActivity extends SessionAwareActivity {
+
+    private static final String EXTRA_EDIT_LISTING_ID = "extra_edit_listing_id";
 
     private TextInputLayout layoutTitle;
     private TextInputLayout layoutPrice;
@@ -51,6 +55,10 @@ public class CreateListingActivity extends AppCompatActivity {
     private MaterialAutoCompleteTextView inputCondition;
     private MaterialAutoCompleteTextView inputBrakeType;
     private MaterialAutoCompleteTextView inputFrameMaterial;
+    private TextView textCreateListingBadge;
+    private TextView textCreateListingTitle;
+    private TextView textCreateListingSubtitle;
+    private TextView textCreateListingFormTitle;
     private TextView textSelectedImages;
     private MaterialButton buttonPickImages;
     private MaterialButton buttonSubmit;
@@ -65,6 +73,12 @@ public class CreateListingActivity extends AppCompatActivity {
     private List<ReferenceOption> frameMaterialOptions = new ArrayList<>();
     private final List<Uri> selectedImageUris = new ArrayList<>();
 
+    private SellerProductRemoteRepository sellerProductRemoteRepository;
+    private ReferenceDataRemoteRepository referenceDataRemoteRepository;
+    private boolean editMode;
+    private String editingListingId;
+    private SellerListingEditorData existingListingData;
+
     private final ActivityResultLauncher<String> imagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.GetMultipleContents(), uris -> {
                 selectedImageUris.clear();
@@ -74,6 +88,16 @@ public class CreateListingActivity extends AppCompatActivity {
                 layoutImages.setError(null);
                 renderSelectedImages();
             });
+
+    public static Intent createIntent(Context context) {
+        return new Intent(context, CreateListingActivity.class);
+    }
+
+    public static Intent createEditIntent(Context context, String listingId) {
+        Intent intent = new Intent(context, CreateListingActivity.class);
+        intent.putExtra(EXTRA_EDIT_LISTING_ID, listingId);
+        return intent;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +109,11 @@ public class CreateListingActivity extends AppCompatActivity {
             return;
         }
 
+        editMode = getIntent().hasExtra(EXTRA_EDIT_LISTING_ID);
+        editingListingId = getIntent().getStringExtra(EXTRA_EDIT_LISTING_ID);
+        sellerProductRemoteRepository = new SellerProductRemoteRepository(this);
+        referenceDataRemoteRepository = new ReferenceDataRemoteRepository(this);
+
         setContentView(R.layout.activity_create_listing);
         SystemBarInsetsHelper.applyToRoot(findViewById(R.id.createListingRoot));
 
@@ -93,6 +122,7 @@ public class CreateListingActivity extends AppCompatActivity {
         toolbar.setTitle("");
 
         bindViews();
+        applyModeCopy();
         setupStaticConditionDropdown();
         renderSelectedImages();
 
@@ -122,10 +152,23 @@ public class CreateListingActivity extends AppCompatActivity {
         inputCondition = findViewById(R.id.inputListingCondition);
         inputBrakeType = findViewById(R.id.inputListingBrakeType);
         inputFrameMaterial = findViewById(R.id.inputListingFrameMaterial);
+        textCreateListingBadge = findViewById(R.id.textCreateListingBadge);
+        textCreateListingTitle = findViewById(R.id.textCreateListingTitle);
+        textCreateListingSubtitle = findViewById(R.id.textCreateListingSubtitle);
+        textCreateListingFormTitle = findViewById(R.id.textCreateListingFormTitle);
         textSelectedImages = findViewById(R.id.textSelectedImages);
         buttonPickImages = findViewById(R.id.buttonPickListingImages);
         buttonSubmit = findViewById(R.id.buttonSubmitListing);
         stateController = new SectionStateController(findViewById(android.R.id.content), R.id.layoutCreateListingState);
+    }
+
+    private void applyModeCopy() {
+        textCreateListingBadge.setText(editMode ? R.string.edit_listing_badge : R.string.create_listing_badge);
+        textCreateListingTitle.setText(editMode ? R.string.edit_listing_title : R.string.create_listing_title);
+        textCreateListingSubtitle.setText(editMode ? R.string.edit_listing_subtitle : R.string.create_listing_subtitle);
+        textCreateListingFormTitle.setText(editMode ? R.string.edit_listing_form_title : R.string.create_listing_form_title);
+        buttonPickImages.setText(editMode ? R.string.edit_listing_pick_images : R.string.create_listing_pick_images);
+        buttonSubmit.setText(editMode ? R.string.edit_listing_submit : R.string.create_listing_submit);
     }
 
     private void setupStaticConditionDropdown() {
@@ -140,7 +183,7 @@ public class CreateListingActivity extends AppCompatActivity {
 
     private void loadReferenceData() {
         setLoadingState(true, getString(R.string.create_listing_loading_title), getString(R.string.create_listing_loading_message));
-        new ReferenceDataRemoteRepository(this).fetchCreateListingOptions(new RepositoryCallback<CreateListingFormOptions>() {
+        referenceDataRemoteRepository.fetchCreateListingOptions(new RepositoryCallback<CreateListingFormOptions>() {
             @Override
             public void onSuccess(CreateListingFormOptions value) {
                 if (isFinishing()) {
@@ -150,6 +193,10 @@ public class CreateListingActivity extends AppCompatActivity {
                 frameMaterialOptions = value.getFrameMaterials();
                 bindReferenceDropdown(inputBrakeType, brakeTypeOptions);
                 bindReferenceDropdown(inputFrameMaterial, frameMaterialOptions);
+                if (editMode) {
+                    loadExistingListing();
+                    return;
+                }
                 setLoadingState(false, null, null);
             }
 
@@ -167,6 +214,59 @@ public class CreateListingActivity extends AppCompatActivity {
                 buttonSubmit.setEnabled(false);
             }
         });
+    }
+
+    private void loadExistingListing() {
+        if (editingListingId == null || editingListingId.trim().isEmpty()) {
+            Toast.makeText(this, R.string.edit_listing_missing_id, Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        stateController.showLoading(
+                getString(R.string.edit_listing_loading_title),
+                getString(R.string.edit_listing_loading_message)
+        );
+
+        sellerProductRemoteRepository.fetchMyProductDetail(editingListingId, new RepositoryCallback<SellerListingEditorData>() {
+            @Override
+            public void onSuccess(SellerListingEditorData value) {
+                if (isFinishing()) {
+                    return;
+                }
+                existingListingData = value;
+                populateForm(value);
+                setLoadingState(false, null, null);
+            }
+
+            @Override
+            public void onError(String message, Throwable throwable) {
+                if (isFinishing()) {
+                    return;
+                }
+                stateController.showMessage(
+                        getString(R.string.edit_listing_error_title),
+                        message,
+                        getString(R.string.state_action_retry),
+                        actionView -> loadExistingListing()
+                );
+            }
+        });
+    }
+
+    private void populateForm(SellerListingEditorData data) {
+        inputTitle.setText(data.getTitle());
+        inputDescription.setText(data.getDescription());
+        inputPrice.setText(String.valueOf(data.getPrice()));
+        inputProvince.setText(data.getProvince());
+        inputDistrict.setText(data.getDistrict());
+        inputFrameSize.setText(data.getFrameSize());
+        inputWheelSize.setText(data.getWheelSize());
+        inputGroupset.setText(data.getGroupset());
+        inputCondition.setText(resolveLabelById(conditionOptions, data.getConditionKey()), false);
+        inputBrakeType.setText(resolveClosestLabel(brakeTypeOptions, data.getBrakeTypeLabel()), false);
+        inputFrameMaterial.setText(resolveClosestLabel(frameMaterialOptions, data.getFrameMaterialLabel()), false);
+        renderSelectedImages();
     }
 
     private void bindReferenceDropdown(MaterialAutoCompleteTextView inputView, List<ReferenceOption> options) {
@@ -191,6 +291,13 @@ public class CreateListingActivity extends AppCompatActivity {
 
     private void renderSelectedImages() {
         if (selectedImageUris.isEmpty()) {
+            if (editMode && existingListingData != null) {
+                textSelectedImages.setText(getString(
+                        R.string.edit_listing_images_keep_current,
+                        existingListingData.getCurrentImageCount()
+                ));
+                return;
+            }
             textSelectedImages.setText(R.string.create_listing_images_empty);
             return;
         }
@@ -207,6 +314,9 @@ public class CreateListingActivity extends AppCompatActivity {
             builder.append('\n')
                     .append(getString(R.string.create_listing_images_more, selectedImageUris.size() - previewCount));
         }
+        if (editMode) {
+            builder.append('\n').append(getString(R.string.edit_listing_images_replace_note));
+        }
         textSelectedImages.setText(builder.toString());
     }
 
@@ -218,14 +328,18 @@ public class CreateListingActivity extends AppCompatActivity {
         }
 
         setSubmitting(true);
-        new SellerProductRemoteRepository(this).createProduct(draft, new RepositoryCallback<SellerListing>() {
+        RepositoryCallback<SellerListing> callback = new RepositoryCallback<SellerListing>() {
             @Override
             public void onSuccess(SellerListing value) {
                 if (isFinishing()) {
                     return;
                 }
                 setSubmitting(false);
-                Toast.makeText(CreateListingActivity.this, R.string.create_listing_success, Toast.LENGTH_SHORT).show();
+                Toast.makeText(
+                        CreateListingActivity.this,
+                        editMode ? R.string.edit_listing_success : R.string.create_listing_success,
+                        Toast.LENGTH_SHORT
+                ).show();
                 startActivity(MainActivity.createIntent(
                         CreateListingActivity.this,
                         R.id.navigation_wishlist
@@ -240,13 +354,19 @@ public class CreateListingActivity extends AppCompatActivity {
                 }
                 setSubmitting(false);
                 stateController.showMessage(
-                        getString(R.string.create_listing_submit_error_title),
+                        getString(editMode ? R.string.edit_listing_error_title : R.string.create_listing_submit_error_title),
                         message,
                         getString(R.string.state_action_retry),
                         actionView -> submitListing()
                 );
             }
-        });
+        };
+
+        if (editMode) {
+            sellerProductRemoteRepository.updateProduct(editingListingId, draft, callback);
+            return;
+        }
+        sellerProductRemoteRepository.createProduct(draft, callback);
     }
 
     private CreateListingDraft buildValidatedDraft() {
@@ -307,8 +427,12 @@ public class CreateListingActivity extends AppCompatActivity {
             layoutFrameMaterial.setError(getString(R.string.create_listing_error_frame_material_required));
             return null;
         }
-        if (selectedImageUris.size() < 3) {
+        if (!editMode && selectedImageUris.size() < 3) {
             layoutImages.setError(getString(R.string.create_listing_error_images_required));
+            return null;
+        }
+        if (editMode && !selectedImageUris.isEmpty() && selectedImageUris.size() < 3) {
+            layoutImages.setError(getString(R.string.edit_listing_error_images_required));
             return null;
         }
 
@@ -349,17 +473,41 @@ public class CreateListingActivity extends AppCompatActivity {
         return null;
     }
 
+    private String resolveLabelById(List<ReferenceOption> options, String selectedId) {
+        for (ReferenceOption option : options) {
+            if (option.getId().equals(selectedId)) {
+                return option.getLabel();
+            }
+        }
+        return options.isEmpty() ? "" : options.get(0).getLabel();
+    }
+
+    private String resolveClosestLabel(List<ReferenceOption> options, String expectedLabel) {
+        if (expectedLabel == null || expectedLabel.trim().isEmpty()) {
+            return options.isEmpty() ? "" : options.get(0).getLabel();
+        }
+        for (ReferenceOption option : options) {
+            if (option.getLabel().equalsIgnoreCase(expectedLabel.trim())) {
+                return option.getLabel();
+            }
+        }
+        return expectedLabel.trim();
+    }
+
     private void setSubmitting(boolean isSubmitting) {
         buttonSubmit.setEnabled(!isSubmitting);
         buttonPickImages.setEnabled(!isSubmitting);
         if (isSubmitting) {
             stateController.showLoading(
-                    getString(R.string.create_listing_submitting_title),
-                    getString(R.string.create_listing_submitting_message)
+                    getString(editMode ? R.string.edit_listing_submitting_title : R.string.create_listing_submitting_title),
+                    getString(editMode ? R.string.edit_listing_submitting_message : R.string.create_listing_submitting_message)
             );
         } else {
             stateController.hide();
         }
+        buttonSubmit.setText(isSubmitting
+                ? (editMode ? R.string.edit_listing_submit_loading : R.string.create_listing_submit_loading)
+                : (editMode ? R.string.edit_listing_submit : R.string.create_listing_submit));
     }
 
     private void setLoadingState(boolean isLoading, String title, String message) {

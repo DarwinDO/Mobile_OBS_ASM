@@ -9,7 +9,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.IntentCompat;
 
@@ -29,7 +28,7 @@ import com.google.android.material.card.MaterialCardView;
 
 import java.util.List;
 
-public class OrderDetailActivity extends AppCompatActivity {
+public class OrderDetailActivity extends SessionAwareActivity {
 
     private static final String EXTRA_ORDER = "extra_order";
 
@@ -41,6 +40,7 @@ public class OrderDetailActivity extends AppCompatActivity {
     private PaymentRemoteRepository paymentRemoteRepository;
     private OrderRemoteRepository orderRemoteRepository;
     private String activePaymentLink = "";
+    private boolean allowResumeRefresh;
 
     private View cardPaymentRequest;
     private TextView textPaymentRequestSummary;
@@ -90,6 +90,18 @@ public class OrderDetailActivity extends AppCompatActivity {
         bindOrder(currentOrder);
         bindAvailableActions();
         loadPaymentHistory();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (allowResumeRefresh
+                && currentOrder != null
+                && currentOrder.isRemoteSource()
+                && SessionManager.getInstance(this).hasActiveSession()) {
+            refreshOrderSnapshot(false);
+        }
+        allowResumeRefresh = true;
     }
 
     private void bindViews() {
@@ -147,6 +159,10 @@ public class OrderDetailActivity extends AppCompatActivity {
     }
 
     private void loadPaymentHistory() {
+        loadPaymentHistory(true);
+    }
+
+    private void loadPaymentHistory(boolean showLoadingState) {
         if (!currentOrder.isRemoteSource()) {
             cardPaymentHistory.setVisibility(View.GONE);
             cardPaymentRequest.setVisibility(View.GONE);
@@ -154,10 +170,12 @@ public class OrderDetailActivity extends AppCompatActivity {
             return;
         }
 
-        stateController.showLoading(
-                getString(R.string.order_detail_loading_title),
-                getString(R.string.order_detail_loading_message)
-        );
+        if (showLoadingState) {
+            stateController.showLoading(
+                    getString(R.string.order_detail_loading_title),
+                    getString(R.string.order_detail_loading_message)
+            );
+        }
 
         paymentRemoteRepository.fetchOrderPayments(currentOrder.getId(), new RepositoryCallback<List<PaymentHistoryItem>>() {
             @Override
@@ -166,7 +184,9 @@ public class OrderDetailActivity extends AppCompatActivity {
                     return;
                 }
                 renderPaymentHistory(value);
-                stateController.hide();
+                if (showLoadingState) {
+                    stateController.hide();
+                }
             }
 
             @Override
@@ -174,12 +194,57 @@ public class OrderDetailActivity extends AppCompatActivity {
                 if (isFinishing()) {
                     return;
                 }
-                stateController.showMessage(
-                        getString(R.string.order_detail_payment_history_error_title),
-                        message,
-                        getString(R.string.state_action_retry),
-                        actionView -> loadPaymentHistory()
-                );
+                if (showLoadingState) {
+                    stateController.showMessage(
+                            getString(R.string.order_detail_payment_history_error_title),
+                            message,
+                            getString(R.string.state_action_retry),
+                            actionView -> loadPaymentHistory()
+                    );
+                }
+            }
+        });
+    }
+
+    private void refreshOrderSnapshot(boolean showLoadingState) {
+        if (!currentOrder.isRemoteSource()) {
+            return;
+        }
+
+        if (showLoadingState) {
+            stateController.showLoading(
+                    getString(R.string.order_detail_loading_title),
+                    getString(R.string.order_detail_loading_message)
+            );
+        }
+
+        orderRemoteRepository.fetchMyOrderById(currentOrder.getId(), new RepositoryCallback<OrderPreview>() {
+            @Override
+            public void onSuccess(OrderPreview value) {
+                if (isFinishing()) {
+                    return;
+                }
+                currentOrder = value;
+                activePaymentLink = "";
+                cardPaymentRequest.setVisibility(View.GONE);
+                bindOrder(currentOrder);
+                bindAvailableActions();
+                loadPaymentHistory(showLoadingState);
+            }
+
+            @Override
+            public void onError(String message, Throwable throwable) {
+                if (isFinishing()) {
+                    return;
+                }
+                if (showLoadingState) {
+                    stateController.showMessage(
+                            getString(R.string.order_detail_payment_history_error_title),
+                            message,
+                            getString(R.string.state_action_retry),
+                            actionView -> refreshOrderSnapshot(true)
+                    );
+                }
             }
         });
     }
@@ -362,7 +427,7 @@ public class OrderDetailActivity extends AppCompatActivity {
                 }
                 showPaymentRequest(value);
                 bindAvailableActions();
-                loadPaymentHistory();
+                loadPaymentHistory(true);
                 Toast.makeText(OrderDetailActivity.this, R.string.order_action_request_payment_success, Toast.LENGTH_SHORT).show();
             }
 
@@ -477,7 +542,7 @@ public class OrderDetailActivity extends AppCompatActivity {
                 cardPaymentRequest.setVisibility(View.GONE);
                 bindOrder(currentOrder);
                 bindAvailableActions();
-                loadPaymentHistory();
+                loadPaymentHistory(true);
                 Toast.makeText(OrderDetailActivity.this, successMessageRes, Toast.LENGTH_SHORT).show();
             }
 

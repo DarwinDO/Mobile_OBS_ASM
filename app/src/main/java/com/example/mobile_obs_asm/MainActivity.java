@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.annotation.IdRes;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.example.mobile_obs_asm.data.SessionManager;
@@ -18,7 +17,7 @@ import com.example.mobile_obs_asm.util.SystemBarInsetsHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends SessionAwareActivity {
 
     public static final String EXTRA_START_DESTINATION = "extra_start_destination";
 

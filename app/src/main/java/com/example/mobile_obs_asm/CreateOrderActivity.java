@@ -8,7 +8,6 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.IntentCompat;
 
 import com.example.mobile_obs_asm.data.OrderRemoteRepository;
@@ -27,7 +26,7 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import java.math.BigDecimal;
 
-public class CreateOrderActivity extends AppCompatActivity {
+public class CreateOrderActivity extends SessionAwareActivity {
 
     private static final String EXTRA_PRODUCT = "extra_product";
 

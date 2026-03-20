@@ -86,6 +86,7 @@ public class SessionManager {
     }
 
     public void clearSession() {
+        WishlistStateStore.getInstance(appContext).clearActiveUserState();
         sharedPreferences.edit().clear().commit();
     }
 

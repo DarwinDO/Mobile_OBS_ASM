@@ -8,11 +8,13 @@ import java.util.List;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.PATCH;
 import retrofit2.http.Path;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.Query;
 
@@ -32,6 +34,9 @@ public interface ProductApiService {
             @Query("page") int page,
             @Query("size") int size
     );
+
+    @GET("api/products/my/{id}")
+    Call<ApiEnvelope<RemoteProductResponse>> getMyProductDetail(@Path("id") String productId);
 
     @PATCH("api/products/{id}/hide")
     Call<ApiEnvelope<RemoteProductResponse>> hideProduct(@Path("id") String productId);
@@ -55,4 +60,25 @@ public interface ProductApiService {
             @Part("district") RequestBody district,
             @Part List<MultipartBody.Part> images
     );
+
+    @Multipart
+    @PUT("api/products/{id}")
+    Call<ApiEnvelope<RemoteProductResponse>> updateProduct(
+            @Path("id") String productId,
+            @Part("title") RequestBody title,
+            @Part("description") RequestBody description,
+            @Part("price") RequestBody price,
+            @Part("brakeTypeId") RequestBody brakeTypeId,
+            @Part("frameMaterialId") RequestBody frameMaterialId,
+            @Part("frameSize") RequestBody frameSize,
+            @Part("wheelSize") RequestBody wheelSize,
+            @Part("groupset") RequestBody groupset,
+            @Part("condition") RequestBody condition,
+            @Part("province") RequestBody province,
+            @Part("district") RequestBody district,
+            @Part List<MultipartBody.Part> images
+    );
+
+    @DELETE("api/products/{id}")
+    Call<ApiEnvelope<String>> deleteProduct(@Path("id") String productId);
 }

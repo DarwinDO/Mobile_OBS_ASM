@@ -11,6 +11,7 @@ public class Product implements Parcelable {
     private final String title;
     private final String tagline;
     private final String coverLabel;
+    private final String imageUrl;
     private final String location;
     private final String condition;
     private final String badge;
@@ -40,10 +41,49 @@ public class Product implements Parcelable {
             @ColorRes int coverColorRes,
             boolean remoteSource
     ) {
+        this(
+                id,
+                title,
+                tagline,
+                coverLabel,
+                null,
+                location,
+                condition,
+                badge,
+                description,
+                frameSize,
+                wheelSize,
+                groupset,
+                price,
+                heroColorRes,
+                coverColorRes,
+                remoteSource
+        );
+    }
+
+    public Product(
+            String id,
+            String title,
+            String tagline,
+            String coverLabel,
+            String imageUrl,
+            String location,
+            String condition,
+            String badge,
+            String description,
+            String frameSize,
+            String wheelSize,
+            String groupset,
+            long price,
+            @ColorRes int heroColorRes,
+            @ColorRes int coverColorRes,
+            boolean remoteSource
+    ) {
         this.id = id;
         this.title = title;
         this.tagline = tagline;
         this.coverLabel = coverLabel;
+        this.imageUrl = imageUrl;
         this.location = location;
         this.condition = condition;
         this.badge = badge;
@@ -62,6 +102,7 @@ public class Product implements Parcelable {
         title = in.readString();
         tagline = in.readString();
         coverLabel = in.readString();
+        imageUrl = in.readString();
         location = in.readString();
         condition = in.readString();
         badge = in.readString();
@@ -101,6 +142,10 @@ public class Product implements Parcelable {
 
     public String getCoverLabel() {
         return coverLabel;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
     }
 
     public String getLocation() {
@@ -158,6 +203,7 @@ public class Product implements Parcelable {
         dest.writeString(title);
         dest.writeString(tagline);
         dest.writeString(coverLabel);
+        dest.writeString(imageUrl);
         dest.writeString(location);
         dest.writeString(condition);
         dest.writeString(badge);

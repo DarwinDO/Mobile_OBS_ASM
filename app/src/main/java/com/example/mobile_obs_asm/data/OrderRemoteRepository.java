@@ -96,6 +96,26 @@ public class OrderRemoteRepository {
         });
     }
 
+    public void fetchMyOrderById(String orderId, RepositoryCallback<OrderPreview> callback) {
+        fetchMyOrders(new RepositoryCallback<List<OrderPreview>>() {
+            @Override
+            public void onSuccess(List<OrderPreview> value) {
+                for (OrderPreview orderPreview : value) {
+                    if (orderPreview.getId().equals(orderId)) {
+                        callback.onSuccess(orderPreview);
+                        return;
+                    }
+                }
+                callback.onError("Không tìm thấy đơn hàng này trong danh sách của bạn.", null);
+            }
+
+            @Override
+            public void onError(String message, Throwable throwable) {
+                callback.onError(message, throwable);
+            }
+        });
+    }
+
     public void acceptOrder(String orderId, RepositoryCallback<OrderPreview> callback) {
         orderApiService.acceptOrder(orderId).enqueue(createActionCallback(callback, "Không thể tiếp nhận đơn này lúc này."));
     }

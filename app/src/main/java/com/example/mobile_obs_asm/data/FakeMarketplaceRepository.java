@@ -61,6 +61,10 @@ public class FakeMarketplaceRepository {
         }
     }
 
+    public boolean isWishlistProduct(String productId) {
+        return findWishlistProduct(productId) != null;
+    }
+
     public List<OrderPreview> getOrderPreviews() {
         return Collections.unmodifiableList(orderPreviews);
     }
@@ -94,6 +98,7 @@ public class FakeMarketplaceRepository {
                 "Giant Defy Advanced 2",
                 "Khung endurance êm, phù hợp cho những buổi đạp xa cuối tuần.",
                 "RD",
+                "https://picsum.photos/seed/oldbicycles-road-001/900/700",
                 "Thành phố Hồ Chí Minh",
                 "Đã qua sử dụng nhẹ",
                 "Đã kiểm định",
@@ -111,6 +116,7 @@ public class FakeMarketplaceRepository {
                 "Specialized Diverge Elite",
                 "Cấu hình gravel linh hoạt cho đi phố lẫn đường xấu nhẹ.",
                 "GV",
+                "https://picsum.photos/seed/oldbicycles-gravel-002/900/700",
                 "Hà Nội",
                 "Rất tốt",
                 "Được quan tâm",
@@ -128,6 +134,7 @@ public class FakeMarketplaceRepository {
                 "Trek FX 3 Disc",
                 "Mẫu hybrid nhanh gọn, tư thế ngồi thoải mái và phanh ổn định.",
                 "CT",
+                "https://picsum.photos/seed/oldbicycles-city-003/900/700",
                 "Cần Thơ",
                 "Tốt",
                 "Đi phố hằng ngày",
@@ -145,6 +152,7 @@ public class FakeMarketplaceRepository {
                 "Peugeot Ventoux Classic",
                 "Khung thép cổ điển đã được làm mới để đi phố nhẹ nhàng.",
                 "VT",
+                "https://picsum.photos/seed/oldbicycles-vintage-004/900/700",
                 "Huế",
                 "Đã phục dựng",
                 "Phong cách sưu tầm",

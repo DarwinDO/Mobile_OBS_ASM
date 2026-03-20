@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.mobile_obs_asm.LoginActivity;
 import com.example.mobile_obs_asm.MainActivity;
@@ -33,6 +34,8 @@ public class OrdersFragment extends Fragment {
     private SectionStateController stateController;
     private OrderRemoteRepository orderRemoteRepository;
     private boolean sellerSession;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private boolean allowResumeRefresh;
 
     @Nullable
     @Override
@@ -48,6 +51,7 @@ public class OrdersFragment extends Fragment {
         sellerSession = SessionManager.getInstance(requireContext()).isSellerSession();
         recyclerView = view.findViewById(R.id.recyclerOrders);
         stateController = new SectionStateController(view, R.id.layoutOrdersState);
+        swipeRefreshLayout = view.findViewById(R.id.swipeOrdersRefresh);
         bindRoleAwareCopy(view);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setNestedScrollingEnabled(false);
@@ -56,12 +60,23 @@ public class OrdersFragment extends Fragment {
                 order -> startActivity(OrderDetailActivity.createIntent(requireContext(), order))
         );
         recyclerView.setAdapter(adapter);
+        swipeRefreshLayout.setOnRefreshListener(this::loadOrders);
 
         loadOrders();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (allowResumeRefresh) {
+            loadOrders();
+        }
+        allowResumeRefresh = true;
+    }
+
     private void loadOrders() {
         if (!SessionManager.getInstance(requireContext()).hasActiveSession()) {
+            swipeRefreshLayout.setRefreshing(false);
             List<OrderPreview> demoOrders = FakeMarketplaceRepository.getInstance().getOrderPreviews();
             adapter.replaceOrders(demoOrders);
             recyclerView.setVisibility(demoOrders.isEmpty() ? View.GONE : View.VISIBLE);
@@ -87,6 +102,7 @@ public class OrdersFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
+                swipeRefreshLayout.setRefreshing(false);
                 adapter.replaceOrders(value);
                 if (value.isEmpty()) {
                     recyclerView.setVisibility(View.GONE);
@@ -107,6 +123,7 @@ public class OrdersFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
+                swipeRefreshLayout.setRefreshing(false);
                 recyclerView.setVisibility(View.GONE);
                 stateController.showMessage(
                         getString(sellerSession ? R.string.state_seller_orders_error_title : R.string.state_orders_error_title),

@@ -3,6 +3,7 @@ package com.example.mobile_obs_asm.ui.home;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -13,7 +14,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mobile_obs_asm.R;
 import com.example.mobile_obs_asm.model.Product;
+import com.example.mobile_obs_asm.util.ProductImageUrlResolver;
 import com.example.mobile_obs_asm.util.PriceFormatter;
+import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 
@@ -88,6 +91,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         holder.textPrice.setText(PriceFormatter.formatCurrency(product.getPrice()));
         holder.textCoverLabel.setText(product.getCoverLabel());
         holder.cardCover.setCardBackgroundColor(ContextCompat.getColor(holder.itemView.getContext(), product.getCoverColorRes()));
+        bindCoverImage(holder, product);
         holder.cardView.setOnClickListener(v -> listener.onProductClick(product));
         if (actionLabelRes != 0 && actionListener != null) {
             holder.buttonAction.setVisibility(View.VISIBLE);
@@ -108,9 +112,27 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         return products.size();
     }
 
+    private void bindCoverImage(@NonNull ProductViewHolder holder, Product product) {
+        if (ProductImageUrlResolver.hasValue(product.getImageUrl())) {
+            holder.imageCover.setVisibility(View.VISIBLE);
+            holder.textCoverLabel.setVisibility(View.GONE);
+            Glide.with(holder.itemView)
+                    .load(product.getImageUrl())
+                    .centerCrop()
+                    .into(holder.imageCover);
+            return;
+        }
+
+        Glide.with(holder.itemView).clear(holder.imageCover);
+        holder.imageCover.setImageDrawable(null);
+        holder.imageCover.setVisibility(View.GONE);
+        holder.textCoverLabel.setVisibility(View.VISIBLE);
+    }
+
     static class ProductViewHolder extends RecyclerView.ViewHolder {
         private final MaterialCardView cardView;
         private final MaterialCardView cardCover;
+        private final ImageView imageCover;
         private final TextView textBadge;
         private final TextView textTitle;
         private final TextView textTagline;
@@ -123,6 +145,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             super(itemView);
             cardView = itemView.findViewById(R.id.cardProduct);
             cardCover = itemView.findViewById(R.id.cardProductCover);
+            imageCover = itemView.findViewById(R.id.imageProductCover);
             textBadge = itemView.findViewById(R.id.textProductBadge);
             textTitle = itemView.findViewById(R.id.textProductTitle);
             textTagline = itemView.findViewById(R.id.textProductTagline);

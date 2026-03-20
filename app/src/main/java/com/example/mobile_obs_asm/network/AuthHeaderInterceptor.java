@@ -2,7 +2,9 @@ package com.example.mobile_obs_asm.network;
 
 import android.content.Context;
 
+import com.example.mobile_obs_asm.R;
 import com.example.mobile_obs_asm.data.SessionManager;
+import com.example.mobile_obs_asm.util.SessionExpiryNotifier;
 
 import java.io.IOException;
 
@@ -12,10 +14,12 @@ import okhttp3.Response;
 
 public class AuthHeaderInterceptor implements Interceptor {
 
+    private final Context appContext;
     private final SessionManager sessionManager;
 
     public AuthHeaderInterceptor(Context context) {
-        sessionManager = SessionManager.getInstance(context);
+        appContext = context.getApplicationContext();
+        sessionManager = SessionManager.getInstance(appContext);
     }
 
     @Override
@@ -30,6 +34,16 @@ public class AuthHeaderInterceptor implements Interceptor {
         Request authenticatedRequest = original.newBuilder()
                 .header("Authorization", "Bearer " + accessToken)
                 .build();
-        return chain.proceed(authenticatedRequest);
+        Response response = chain.proceed(authenticatedRequest);
+
+        if ((response.code() == 401 || response.code() == 403) && sessionManager.hasActiveSession()) {
+            sessionManager.clearSession();
+            SessionExpiryNotifier.notifyExpired(
+                    appContext,
+                    appContext.getString(R.string.session_expired_message)
+            );
+        }
+
+        return response;
     }
 }

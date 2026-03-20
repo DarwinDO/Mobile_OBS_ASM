@@ -11,6 +11,7 @@ import com.example.mobile_obs_asm.network.wishlist.WishlistApiService;
 import com.example.mobile_obs_asm.util.ApiErrorMessageExtractor;
 import com.example.mobile_obs_asm.util.DateLabelFormatter;
 import com.example.mobile_obs_asm.util.DisplayLabelFormatter;
+import com.example.mobile_obs_asm.util.ProductImageUrlResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +22,12 @@ import retrofit2.Response;
 
 public class WishlistRemoteRepository {
 
+    private final Context appContext;
     private final WishlistApiService wishlistApiService;
 
     public WishlistRemoteRepository(Context context) {
-        wishlistApiService = RetrofitClient.createWishlistApiService(context);
+        appContext = context.getApplicationContext();
+        wishlistApiService = RetrofitClient.createWishlistApiService(appContext);
     }
 
     public void fetchWishlist(RepositoryCallback<List<Product>> callback) {
@@ -46,9 +49,15 @@ public class WishlistRemoteRepository {
                 }
 
                 List<Product> mappedProducts = new ArrayList<>();
+                List<String> savedIds = new ArrayList<>();
                 for (RemoteWishlistItemResponse remoteItem : response.body().getResult()) {
                     mappedProducts.add(mapProduct(remoteItem));
+                    String productId = remoteItem.getProductId();
+                    if (productId != null && !productId.trim().isEmpty()) {
+                        savedIds.add(productId.trim());
+                    }
                 }
+                WishlistStateStore.getInstance(appContext).replaceSavedIds(savedIds);
                 callback.onSuccess(mappedProducts);
             }
 
@@ -76,7 +85,9 @@ public class WishlistRemoteRepository {
                     );
                     return;
                 }
-                callback.onSuccess(mapProduct(response.body().getResult()));
+                Product mappedProduct = mapProduct(response.body().getResult());
+                WishlistStateStore.getInstance(appContext).markSaved(mappedProduct.getId());
+                callback.onSuccess(mappedProduct);
             }
 
             @Override
@@ -100,6 +111,7 @@ public class WishlistRemoteRepository {
                     );
                     return;
                 }
+                WishlistStateStore.getInstance(appContext).markRemoved(productId);
                 callback.onSuccess(null);
             }
 
@@ -120,6 +132,7 @@ public class WishlistRemoteRepository {
                 title,
                 "Người bán: " + sellerName,
                 buildCoverLabel(title),
+                ProductImageUrlResolver.hasValue(remoteItem.getPrimaryImageUrl()) ? remoteItem.getPrimaryImageUrl().trim() : null,
                 "Người bán: " + sellerName,
                 status,
                 "Đã lưu vào yêu thích",

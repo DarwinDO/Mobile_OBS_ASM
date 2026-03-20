@@ -19,8 +19,11 @@ public class RemoteProductResponse {
     private String wheelSize;
     private String groupset;
     private String brandName;
+    private String brakeTypeName;
+    private String frameMaterialName;
     @SerializedName(value = "verified", alternate = {"isVerified"})
     private boolean verified;
+    private boolean lockedForTransaction;
     private List<ImageInfo> images;
     private SellerInfo seller;
 
@@ -72,8 +75,20 @@ public class RemoteProductResponse {
         return brandName;
     }
 
+    public String getBrakeTypeName() {
+        return brakeTypeName;
+    }
+
+    public String getFrameMaterialName() {
+        return frameMaterialName;
+    }
+
     public boolean isVerified() {
         return verified;
+    }
+
+    public boolean isLockedForTransaction() {
+        return lockedForTransaction;
     }
 
     public List<ImageInfo> getImages() {

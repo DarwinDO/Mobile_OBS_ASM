@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.mobile_obs_asm.ProductDetailActivity;
 import com.example.mobile_obs_asm.R;
@@ -49,6 +50,8 @@ public class HomeFragment extends Fragment {
     private FeedState currentFeedState = FeedState.LIVE;
     private ProductFilter selectedFilter;
     private ChipGroup chipGroup;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private boolean allowResumeRefresh;
 
     @Nullable
     @Override
@@ -66,12 +69,14 @@ public class HomeFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recyclerHomeProducts);
         stateController = new SectionStateController(view, R.id.layoutHomeState);
         chipGroup = view.findViewById(R.id.chipGroupHomeFilters);
+        swipeRefreshLayout = view.findViewById(R.id.swipeHomeRefresh);
         MaterialButton heroButton = view.findViewById(R.id.buttonHeroExplore);
         adapter = new ProductAdapter(sourceProducts, this::openProductDetail);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setNestedScrollingEnabled(false);
         recyclerView.setAdapter(adapter);
+        swipeRefreshLayout.setOnRefreshListener(this::loadProducts);
 
         heroButton.setOnClickListener(v -> {
             Product firstProduct = adapter.getFirstProduct();
@@ -83,6 +88,15 @@ public class HomeFragment extends Fragment {
         setupFilters();
         renderProductFeed();
         loadProducts();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (allowResumeRefresh) {
+            loadProducts();
+        }
+        allowResumeRefresh = true;
     }
 
     private void setupFilters() {
@@ -118,6 +132,7 @@ public class HomeFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
+                swipeRefreshLayout.setRefreshing(false);
                 if (value == null || value.isEmpty()) {
                     currentFeedState = FeedState.EMPTY_FALLBACK;
                     sourceProducts = new ArrayList<>(fallbackProducts);
@@ -134,6 +149,7 @@ public class HomeFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
+                swipeRefreshLayout.setRefreshing(false);
                 currentFeedState = FeedState.ERROR_FALLBACK;
                 sourceProducts = new ArrayList<>(fallbackProducts);
                 renderProductFeed();

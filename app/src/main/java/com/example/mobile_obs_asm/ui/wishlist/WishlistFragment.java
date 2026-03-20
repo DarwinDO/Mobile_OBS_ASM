@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.mobile_obs_asm.LoginActivity;
 import com.example.mobile_obs_asm.MainActivity;
@@ -33,6 +34,8 @@ public class WishlistFragment extends Fragment {
     private RecyclerView recyclerView;
     private SectionStateController stateController;
     private WishlistRemoteRepository wishlistRemoteRepository;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private boolean allowResumeRefresh;
 
     @Nullable
     @Override
@@ -47,6 +50,7 @@ public class WishlistFragment extends Fragment {
         wishlistRemoteRepository = new WishlistRemoteRepository(requireContext());
         recyclerView = view.findViewById(R.id.recyclerWishlistProducts);
         stateController = new SectionStateController(view, R.id.layoutWishlistState);
+        swipeRefreshLayout = view.findViewById(R.id.swipeWishlistRefresh);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setNestedScrollingEnabled(false);
         adapter = new ProductAdapter(
@@ -56,12 +60,23 @@ public class WishlistFragment extends Fragment {
                 this::handleRemoveAction
         );
         recyclerView.setAdapter(adapter);
+        swipeRefreshLayout.setOnRefreshListener(this::loadWishlist);
 
         loadWishlist();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (allowResumeRefresh) {
+            loadWishlist();
+        }
+        allowResumeRefresh = true;
+    }
+
     private void loadWishlist() {
         if (!SessionManager.getInstance(requireContext()).hasActiveSession()) {
+            swipeRefreshLayout.setRefreshing(false);
             List<Product> demoProducts = FakeMarketplaceRepository.getInstance().getWishlistProducts();
             adapter.replaceProducts(demoProducts);
             recyclerView.setVisibility(demoProducts.isEmpty() ? View.GONE : View.VISIBLE);
@@ -87,6 +102,7 @@ public class WishlistFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
+                swipeRefreshLayout.setRefreshing(false);
                 adapter.replaceProducts(value);
                 if (value.isEmpty()) {
                     recyclerView.setVisibility(View.GONE);
@@ -107,6 +123,7 @@ public class WishlistFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
+                swipeRefreshLayout.setRefreshing(false);
                 recyclerView.setVisibility(View.GONE);
                 stateController.showMessage(
                         getString(R.string.state_wishlist_error_title),
@@ -173,6 +190,7 @@ public class WishlistFragment extends Fragment {
     }
 
     private void updateWishlistStateAfterRemoval(boolean demoMode) {
+        swipeRefreshLayout.setRefreshing(false);
         if (adapter.getItemCount() == 0) {
             recyclerView.setVisibility(View.GONE);
             stateController.showMessage(
