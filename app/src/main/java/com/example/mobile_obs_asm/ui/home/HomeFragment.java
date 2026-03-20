@@ -46,6 +46,14 @@ public class HomeFragment extends Fragment {
         VINTAGE
     }
 
+    private enum ProductGroup {
+        ROAD,
+        GRAVEL,
+        CITY,
+        VINTAGE,
+        UNKNOWN
+    }
+
     private ProductAdapter adapter;
     private ProductRemoteRepository productRemoteRepository;
     private RecyclerView recyclerView;
@@ -60,6 +68,7 @@ public class HomeFragment extends Fragment {
     private TextInputEditText inputSearch;
     private TextView textResultsSummary;
     private String searchQuery = "";
+    private boolean includedUngroupedProducts;
 
     @Nullable
     @Override
@@ -228,6 +237,7 @@ public class HomeFragment extends Fragment {
 
     private List<Product> filterProducts(List<Product> products) {
         List<Product> filteredProducts = new ArrayList<>();
+        includedUngroupedProducts = false;
         for (Product product : products) {
             if (matchesFilter(product, selectedFilter) && matchesSearch(product)) {
                 filteredProducts.add(product);
@@ -241,26 +251,109 @@ public class HomeFragment extends Fragment {
             return true;
         }
 
-        String searchSpace = (
-                safe(product.getId()) + " "
-                        + safe(product.getTitle()) + " "
-                        + safe(product.getTagline()) + " "
-                        + safe(product.getDescription())
-        ).toLowerCase(Locale.ROOT);
-        String normalizedSearchSpace = normalizeForSearch(searchSpace);
+        ProductGroup productGroup = inferProductGroup(product);
+        if (productGroup == ProductGroup.UNKNOWN) {
+            includedUngroupedProducts = true;
+            return true;
+        }
 
         switch (filter) {
             case ROAD:
-                return containsAny(normalizedSearchSpace, "road", "duong truong", "endurance", "race", "defy");
+                return productGroup == ProductGroup.ROAD;
             case GRAVEL:
-                return containsAny(normalizedSearchSpace, "gravel", "dia hinh", "diverge");
+                return productGroup == ProductGroup.GRAVEL;
             case CITY:
-                return containsAny(normalizedSearchSpace, "city", "di pho", "hybrid", "commute", "trek fx", "fx");
+                return productGroup == ProductGroup.CITY;
             case VINTAGE:
-                return containsAny(normalizedSearchSpace, "vintage", "classic", "co dien", "peugeot");
+                return productGroup == ProductGroup.VINTAGE;
             default:
                 return true;
         }
+    }
+
+    private ProductGroup inferProductGroup(Product product) {
+        String normalizedSearchSpace = buildGroupingSearchSpace(product);
+
+        if (containsAny(
+                normalizedSearchSpace,
+                "gravel",
+                "all road",
+                "all-road",
+                "adventure",
+                "bikepacking",
+                "dia hinh",
+                "duong soi",
+                "duong da",
+                "off road",
+                "off-road",
+                "diverge"
+        )) {
+            return ProductGroup.GRAVEL;
+        }
+
+        if (containsAny(
+                normalizedSearchSpace,
+                "vintage",
+                "classic",
+                "co dien",
+                "retro",
+                "peugeot",
+                "phuc dung",
+                "steel",
+                "khung thep"
+        )) {
+            return ProductGroup.VINTAGE;
+        }
+
+        if (containsAny(
+                normalizedSearchSpace,
+                "road",
+                "duong truong",
+                "endurance",
+                "race",
+                "racing",
+                "defy",
+                "aero",
+                "drop bar"
+        )) {
+            return ProductGroup.ROAD;
+        }
+
+        if (containsAny(
+                normalizedSearchSpace,
+                "city",
+                "di pho",
+                "hybrid",
+                "commute",
+                "commuter",
+                "di lai",
+                "hang ngay",
+                "di lam",
+                "thanh pho",
+                "fitness",
+                "fx"
+        )) {
+            return ProductGroup.CITY;
+        }
+
+        return ProductGroup.UNKNOWN;
+    }
+
+    private String buildGroupingSearchSpace(Product product) {
+        StringBuilder builder = new StringBuilder()
+                .append(safe(product.getId())).append(' ')
+                .append(safe(product.getTitle())).append(' ')
+                .append(safe(product.getDescription())).append(' ')
+                .append(safe(product.getBadge())).append(' ')
+                .append(safe(product.getCondition())).append(' ')
+                .append(safe(product.getGroupset())).append(' ');
+
+        // Remote tagline is synthesized from generic copy, so it is too noisy for grouping.
+        if (!product.isRemoteSource()) {
+            builder.append(safe(product.getTagline())).append(' ');
+        }
+
+        return normalizeForSearch(builder.toString());
     }
 
     private boolean matchesSearch(Product product) {
@@ -298,6 +391,10 @@ public class HomeFragment extends Fragment {
     private void updateResultsSummary(int filteredCount, int totalCount) {
         if (selectedFilter == null && searchQuery.isEmpty()) {
             textResultsSummary.setText(getString(R.string.home_results_summary_all, totalCount));
+            return;
+        }
+        if (selectedFilter != null && includedUngroupedProducts) {
+            textResultsSummary.setText(getString(R.string.home_results_summary_soft_filter, filteredCount, totalCount));
             return;
         }
         textResultsSummary.setText(getString(R.string.home_results_summary_filtered, filteredCount, totalCount));

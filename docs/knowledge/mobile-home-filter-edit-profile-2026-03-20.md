@@ -206,3 +206,107 @@ Nhiều khi chỉ cần:
 - form cá nhân chỉnh được
 
 là trải nghiệm đã tiến lên rõ rệt.
+
+## 14. Vì sao chip lọc có thể trả về rỗng với dữ liệu thật?
+
+Lúc đầu, `HomeFragment` đoán nhóm xe bằng vài từ khóa cứng như:
+
+- `road`
+- `gravel`
+- `city`
+- `vintage`
+
+Cách này chạy ổn với dữ liệu mẫu vì tiêu đề và mô tả đã được viết sẵn rất “đẹp”.
+
+Nhưng với dữ liệu seller nhập thật, tiêu đề có thể chỉ là:
+
+- `cccccc`
+- `xe mới`
+- `hàng đẹp`
+
+hoặc mô tả quá ngắn.
+
+Khi đó app không có đủ dấu hiệu để biết xe thuộc nhóm nào, nên nếu người dùng chạm chip, danh sách rất dễ bị lọc sạch.
+
+## 15. Cách đã sửa trong project này
+
+Đợt sửa này đổi bộ lọc sang kiểu “mềm” hơn:
+
+1. App vẫn cố gắng nhận diện nhóm xe bằng từ khóa.
+2. Nhưng chỉ dùng những trường ít nhiễu hơn:
+   - `title`
+   - `description`
+   - `badge`
+   - `condition`
+   - `groupset`
+3. App không còn dựa vào `tagline` sinh tự động của dữ liệu remote vì dòng này dễ làm lệch nhóm xe.
+4. Nếu một tin chưa đủ dữ liệu để xếp vào:
+   - `Đường trường`
+   - `Địa hình nhẹ`
+   - `Đi phố`
+   - `Cổ điển`
+
+thì tin đó được xem là `UNKNOWN`.
+
+## 16. `UNKNOWN` nghĩa là gì?
+
+`UNKNOWN` không phải lỗi dữ liệu.
+
+Nó chỉ có nghĩa là:
+
+- app chưa đủ thông tin để đoán chính xác nhóm xe
+- nên không nên giấu mất tin đó ngay khi người dùng bấm chip
+
+Vì vậy trong project này:
+
+- xe thuộc đúng nhóm thì vẫn hiện
+- xe chưa rõ nhóm cũng vẫn được giữ lại
+
+Nhờ đó người dùng không rơi vào cảm giác:
+
+- “vừa bấm chip là app trắng trơn”
+- hoặc “tưởng backend không trả dữ liệu”
+
+## 17. Luồng runtime mới của chip lọc
+
+1. Người dùng chạm một chip trong `HomeFragment`.
+2. `selectedFilter` được cập nhật.
+3. `filterProducts(...)` duyệt từng `Product`.
+4. `inferProductGroup(...)` đoán nhóm xe từ text thật của sản phẩm.
+5. Nếu đoán ra:
+   - `ROAD`
+   - `GRAVEL`
+   - `CITY`
+   - `VINTAGE`
+
+   thì app lọc đúng theo chip.
+6. Nếu không đoán ra được, app gắn nhóm `UNKNOWN`.
+7. `UNKNOWN` vẫn được giữ lại để tránh lọc rỗng toàn bộ danh sách.
+8. `textHomeResultsSummary` hiển thị câu nhắc rằng có những xe “chưa đủ thông tin để xếp nhóm”.
+
+## 18. File đã áp dụng
+
+- `app/src/main/java/com/example/mobile_obs_asm/ui/home/HomeFragment.java`
+- `app/src/main/res/values/strings.xml`
+
+## 19. Sai lầm dễ gặp với filter kiểu nhóm xe
+
+### Sai lầm 1: Tin rằng backend luôn có field category rõ ràng
+
+Nhiều hệ thống bán hàng không lưu sẵn `bikeType`.
+
+Nếu mobile tự giả định field này luôn có, bộ lọc rất dễ hỏng.
+
+### Sai lầm 2: Dùng text sinh tự động để phân loại
+
+Nếu app tự sinh tagline kiểu:
+
+- “phù hợp đi lại hằng ngày”
+
+thì gần như mọi xe đều có thể bị đẩy sang nhóm `Đi phố`.
+
+### Sai lầm 3: Không xử lý trường hợp “chưa rõ nhóm”
+
+Trong dữ liệu thật, luôn có một tỷ lệ sản phẩm mô tả quá ngắn hoặc nhập thiếu.
+
+Nếu không có nhánh `UNKNOWN`, người dùng sẽ thấy quá nhiều màn hình rỗng.

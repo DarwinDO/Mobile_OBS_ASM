@@ -67,6 +67,7 @@
     <string name="home_search_hint">Tìm theo tên xe, khu vực hoặc mô tả</string>
     <string name="home_results_summary_all">%1$d xe đang hiển thị</string>
     <string name="home_results_summary_filtered">%1$d trên %2$d xe phù hợp với lựa chọn của bạn</string>
+    <string name="home_results_summary_soft_filter">%1$d trên %2$d xe đang khớp hoặc chưa đủ thông tin để xếp nhóm</string>
     <string name="wishlist_hero_badge">Đã lưu</string>
     <string name="wishlist_hero_title">Giữ lại các mẫu xe đáng chú ý để quay lại so sánh.</string>
     <string name="wishlist_hero_subtitle">Khi đăng nhập, danh sách này sẽ theo tài khoản của bạn. Nếu đang xem thử, ứng dụng vẫn giữ vài xe gợi ý để bạn làm quen.</string>
